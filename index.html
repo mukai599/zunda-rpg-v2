@@ -1,0 +1,283 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ずんだ豆知識RPG - 決定版なのだ</title>
+    <style>
+        body { background-color: #e8f5e9; font-family: sans-serif; display: flex; justify-content: center; padding: 10px; margin: 0; }
+        #game-container { width: 100%; max-width: 480px; background: #fff; border: 8px solid #4caf50; border-radius: 40px; overflow: hidden; box-shadow: 0 10px 30px rgba(0,0,0,0.2); position: relative; }
+        
+        /* スタート画面 */
+        #start-overlay { position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.92); z-index: 100; display: flex; flex-direction: column; justify-content: center; align-items: center; text-align: center; color: white; padding: 20px; box-sizing: border-box; }
+        #title-img { width: 90%; max-width: 350px; border-radius: 15px; border: 3px solid #fff; margin-bottom: 20px; }
+        #start-btn { padding: 15px 35px; font-size: 22px; font-weight: bold; background: #4caf50; color: white; border: none; border-radius: 25px; cursor: pointer; }
+
+        /* バトル画面 */
+        #battle-field { height: 350px; background: linear-gradient(#b3e5fc, #ffffff); position: relative; padding: 10px; display: flex; flex-direction: column; justify-content: space-between; }
+        .status-box { background: rgba(255,255,255,0.9); border: 3px solid #4caf50; border-radius: 15px; padding: 8px; width: 180px; z-index: 5; }
+        .hp-bar-bg { width: 100%; height: 12px; background: #ddd; border-radius: 6px; margin-top: 4px; overflow: hidden; border: 1px solid #666; }
+        .hp-bar-fill { height: 100%; background: #4caf50; width: 100%; transition: width 0.3s; }
+        #sprite-container { position: absolute; top:0; left:0; width: 100%; height: 100%; display: flex; justify-content: center; align-items: center; }
+        #main-sprite { max-height: 280px; z-index: 2; }
+
+        /* TIMEゲージ */
+        #timer-area { width: 90%; margin: 5px auto 10px; }
+        #timer-label { font-size: 14px; font-weight: bold; color: #ff5252; }
+        #timer-container { width: 100%; height: 12px; background: #eee; border-radius: 6px; overflow: hidden; border: 2px solid #333; }
+        #timer-bar { height: 100%; width: 100%; background: #ff5252; transition: width 0.1s linear; }
+
+        /* UIエリア */
+        #ui-area { background: #f0f4f0; padding: 15px; border-top: 5px solid #4caf50; }
+        #score-display { font-size: 18px; font-weight: bold; color: #2e7d32; text-align: right; }
+        #question-box { font-size: 15px; font-weight: bold; background: #333; color: #fff; padding: 15px; border-radius: 12px; margin-bottom: 15px; min-height: 80px; text-align: center; display: flex; align-items: center; justify-content: center; line-height: 1.5; }
+        .choice-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+        .choice-btn { padding: 12px 8px; border: 2px solid #4caf50; border-radius: 12px; background: white; font-weight: bold; cursor: pointer; font-size: 13px; }
+        
+        /* 宣伝アニメーション */
+        @keyframes pulse { 0% { transform: scale(1); } 50% { transform: scale(1.02); } 100% { transform: scale(1); } }
+        .shake { animation: shake 0.5s; }
+        @keyframes shake { 0%{transform:translate(2px,2px)} 25%{transform:translate(-3px,-2px)} 50%{transform:translate(3px,2px)} 100%{transform:translate(0,0)} }
+    </style>
+</head>
+<body>
+
+<div id="game-container">
+    <div id="start-overlay">
+        <img id="title-img" src="images/game_title.png" alt="タイトル画像">
+        <button id="start-btn" onclick="startGame()">冒険を始めるなのだ！</button>
+        <p style="font-size:12px; margin-top:15px; color:#ccc;">早く答えるとダメージUPなのだ！</p>
+    </div>
+
+    <div id="battle-field">
+        <div id="enemy-side" class="status-box">
+            <div id="enemy-name" style="font-weight:bold; color:#d32f2f; font-size:14px;">敵の知識</div>
+            <div class="hp-bar-bg"><div id="enemy-hp-fill" class="hp-bar-fill"></div></div>
+        </div>
+        <div id="sprite-container">
+            <img id="main-sprite" src="images/gemini_zunda_think.png">
+        </div>
+        <div id="player-side" class="status-box" style="margin-left:auto;">
+            <div style="font-weight:bold; color:#2e7d32; font-size:14px;">ずんだもん LV:<span id="player-lv">1</span></div>
+            <div class="hp-bar-bg"><div id="player-hp-fill" class="hp-bar-fill"></div></div>
+        </div>
+    </div>
+
+    <div id="ui-area">
+        <div id="timer-area">
+            <span id="timer-label">TIME</span>
+            <div id="timer-container"><div id="timer-bar"></div></div>
+        </div>
+        
+        <div id="item-shelf" style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px;">
+            <div class="item-slot" style="width:55px; height:55px; background:#fff; border:3px solid #4caf50; border-radius:12px; display:flex; flex-direction:column; align-items:center; justify-content:center; cursor:pointer;" onclick="useItem()">
+                <span style="font-size:24px;">🍡</span>
+                <span style="font-size:10px;">x<span id="item-mochi">3</span></span>
+            </div>
+            <div id="score-display">SCORE: <span id="score-text">0</span></div>
+        </div>
+        <div id="question-box"></div>
+        <div id="choices" class="choice-grid"></div>
+    </div>
+</div>
+
+<script>
+    const sounds = {
+        bgmThinking: new Audio('sounds/bgm_thinking.mp3'),
+        result: new Audio('sounds/bgm_result.mp3'),
+        correct: new Audio('sounds/se_correct.mp3'),
+        damage: new Audio('sounds/se_damage.mp3'),
+        vSeikai: new Audio('sounds/voice_seikai.mp3'),
+        vItai: new Audio('sounds/voice_itai.mp3'),
+        vHigh: new Audio('sounds/voice_highscore.mp3'),
+        vGanbare: new Audio('sounds/voice_ganbare.mp3'), // 励まし
+        vPromo: new Audio('sounds/voice_promo.mp3')      // 宣伝
+    };
+    sounds.bgmThinking.loop = true;
+
+    let hp = 100, maxHp = 100, lv = 1, score = 0, mochiCount = 3;
+    let enemyHp = 50, enemyMaxHp = 50, enemiesDefeated = 0;
+    let timerId = null, timeLeftGlobal = 100;
+    const TIME_LIMIT = 12;
+
+    const quizPool = {
+        weak: [
+            { q: "イチゴの表面にあるツブツブ。実はこれ、何？", c: ["種", "果実", "茎"], a: 1 },
+            { q: "タコには心臓が全部でいくつある？", c: ["1個", "2個", "3個"], a: 2 },
+            { q: "バナナは「木」ではなく何の仲間？", c: ["草", "シダ", "苔"], a: 0 },
+            { q: "パンダの尻尾は何色？", c: ["黒", "白", "しましま"], a: 1 },
+            { q: "世界で一番高い山、エベレストがあるのは？", c: ["アンデス", "ヒマラヤ", "アルプス"], a: 1 }
+        ],
+        mid: [
+            { q: "ダイヤモンドの成分は、実は何と同じ？", c: ["鉛筆の芯", "鉄", "ガラス"], a: 0 },
+            { q: "キリンの首の骨の数は、人間と比べてどう？", c: ["人間より多い", "人間より少ない", "同じ"], a: 2 },
+            { q: "マチュピチュ遺跡がある国はどこ？", c: ["チリ", "ペルー", "メキシコ"], a: 1 }
+        ],
+        boss: [
+            { q: "宇宙空間で泣くと、涙はどうなる？", c: ["下に落ちる", "蒸発する", "目の周りに留まる"], a: 2 },
+            { q: "トランプの合計（ジョーカー以外）を全部足すといくつ？", c: ["364", "365", "366"], a: 1 }
+        ]
+    };
+
+    let shuffledPool = { weak: [], mid: [], boss: [] };
+    function prepareQuizzes() {
+        for (let key in quizPool) shuffledPool[key] = [...quizPool[key]].sort(() => Math.random() - 0.5);
+    }
+
+    function startGame() {
+        prepareQuizzes();
+        Object.values(sounds).forEach(s => s.load());
+        sounds.bgmThinking.play();
+        document.getElementById('start-overlay').style.display = 'none';
+        loadQuiz();
+    }
+
+    function updateUI() {
+        document.getElementById('player-hp-fill').style.width = (hp/maxHp*100) + "%";
+        document.getElementById('enemy-hp-fill').style.width = (enemyHp/enemyMaxHp*100) + "%";
+        document.getElementById('score-text').innerText = score;
+        document.getElementById('item-mochi').innerText = mochiCount;
+        document.getElementById('player-lv').innerText = lv;
+    }
+
+    let currentQ = null;
+    function loadQuiz() {
+        if (hp <= 0) return;
+        if (enemiesDefeated >= 10) { showResult(true); return; }
+        
+        let type = (enemiesDefeated >= 7) ? "boss" : (enemiesDefeated >= 3) ? "mid" : "weak";
+        if (shuffledPool[type].length === 0) shuffledPool[type] = [...quizPool[type]].sort(() => Math.random() - 0.5);
+        currentQ = shuffledPool[type].pop();
+        
+        document.getElementById('question-box').innerText = currentQ.q;
+        document.getElementById('main-sprite').src = "images/gemini_zunda_think.png";
+        
+        const container = document.getElementById('choices');
+        container.innerHTML = "";
+        currentQ.c.forEach((c, i) => {
+            const btn = document.createElement('button');
+            btn.className = "choice-btn";
+            btn.innerText = c;
+            btn.onclick = () => checkAnswer(i);
+            container.appendChild(btn);
+        });
+
+        startTimer();
+        updateUI();
+    }
+
+    function startTimer() {
+        clearInterval(timerId);
+        timeLeftGlobal = 100;
+        const bar = document.getElementById('timer-bar');
+        timerId = setInterval(() => {
+            timeLeftGlobal -= (100 / (TIME_LIMIT * 10));
+            bar.style.width = timeLeftGlobal + "%";
+            if (timeLeftGlobal < 30) bar.style.background = "#d32f2f";
+            else bar.style.background = "#ff5252";
+
+            if (timeLeftGlobal <= 0) {
+                clearInterval(timerId);
+                hp -= 25;
+                sounds.damage.play(); sounds.vItai.play();
+                document.getElementById('game-container').classList.add('shake');
+                setTimeout(() => {
+                    document.getElementById('game-container').classList.remove('shake');
+                    if (hp > 0) loadQuiz(); else showResult(false);
+                }, 500);
+            }
+        }, 100);
+    }
+
+    function checkAnswer(select) {
+        clearInterval(timerId);
+        const sprite = document.getElementById('main-sprite');
+
+        if (select === currentQ.a) {
+            // ★タイム連動ダメージ
+            let finalDamage = 50; let bonusScore = 100;
+            if (timeLeftGlobal > 70) { finalDamage = 85; bonusScore = 150; }
+            else if (timeLeftGlobal < 30) { finalDamage = 30; bonusScore = 50; }
+            
+            enemyHp -= finalDamage; score += bonusScore;
+            sounds.correct.play(); sounds.vSeikai.play();
+            sprite.src = "images/gemini_attack_weak.png";
+        } else {
+            hp -= 30;
+            sounds.damage.play(); sounds.vItai.play();
+            sprite.src = "images/gemini_damage_weak_comic.png";
+            document.getElementById('game-container').classList.add('shake');
+            setTimeout(() => document.getElementById('game-container').classList.remove('shake'), 500);
+        }
+        updateUI();
+
+        if (hp <= 0) {
+            sprite.src = "images/gemini_zunda_dead.png";
+            setTimeout(() => showResult(false), 1500);
+            return;
+        }
+        if (enemyHp <= 0) {
+            setTimeout(() => {
+                enemiesDefeated++; lv++; maxHp += 15; hp = maxHp;
+                enemyMaxHp += 40; enemyHp = enemyMaxHp;
+                alert("敵を倒したのだ！"); loadQuiz();
+            }, 800);
+        } else {
+            setTimeout(loadQuiz, 1500);
+        }
+    }
+
+    function useItem() {
+        if (mochiCount > 0 && hp < maxHp) {
+            mochiCount--; hp = Math.min(hp + 50, maxHp);
+            updateUI();
+        }
+    }
+
+    function showResult(clear) {
+        clearInterval(timerId);
+        sounds.bgmThinking.pause();
+        sounds.result.play();
+
+        let promoDelay = 2500;
+        if (!clear) {
+            // ★負けた時の励ましボイス
+            sounds.vGanbare.play();
+            promoDelay = 3000;
+        } else {
+            if (score > (localStorage.getItem('zunda_best_score') || 0)) {
+                localStorage.setItem('zunda_best_score', score);
+                setTimeout(() => sounds.vHigh.play(), 1000);
+                promoDelay = 3500;
+            }
+        }
+
+        // ★宣伝ボイスを予約
+        setTimeout(() => sounds.vPromo.play(), promoDelay);
+        
+        document.getElementById('ui-area').innerHTML = `
+            <div style="text-align:center;">
+                <h2 style="margin-top:0;">${clear ? '【完全クリア】知識王なのだ！' : '【冒険失敗】力尽きたのだ…'}</h2>
+                
+                <div style="background:#f0f4f0; border:3px solid #4caf50; border-radius:15px; padding:15px; margin-bottom:15px;">
+                    <h3 style="margin:0; color:#2e7d32; font-size:18px;">今回の記録</h3>
+                    <p style="font-size:32px; font-weight:bold; margin:10px 0; color:#ff9800;">${score} 点</p>
+                    <p style="font-size:12px; margin:0;">(倒した敵: ${enemiesDefeated}体 / LV: ${lv})</p>
+                </div>
+
+                <div style="background:#fff; border:2px dashed #ff5252; padding:10px; border-radius:15px; margin-bottom:15px; animation: pulse 2s infinite;">
+                    <p style="font-weight:bold; color:#ff5252; margin:0; font-size:14px;">✨ずんだもんスタンプ発売中✨</p>
+                    <a href="https://line.me/S/sticker/32533905?_from=lcm" target="_blank" style="text-decoration:none; color:#2e7d32; font-size:13px; display:block;">
+                        <img src="images/line_stamp_banner.png" style="width:100%; border-radius:10px; margin:8px 0;" alt="スタンプバナー">
+                        <div style="background:#4caf50; color:white; padding:10px; border-radius:10px; font-weight:bold;">
+                            もっとずんだもんと喋るのだ！<br>(クリックでショップへGO！)
+                        </div>
+                    </a>
+                </div>
+
+                <button onclick="location.reload()" style="width:100%; padding:15px; background:#ffda44; border:none; border-radius:10px; font-weight:bold; cursor:pointer; font-size:18px;">もう一度挑戦</button>
+            </div>`;
+    }
+</script>
+</body>
+</html>
