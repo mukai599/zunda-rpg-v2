@@ -36,7 +36,7 @@
     <div id="start-screen" class="full-overlay">
         <img src="images/game_title.png" style="width:90%; margin-bottom:20px; border:4px solid #7dc065; border-radius:15px;">
         <button id="btn-start" class="big-btn">冒険開始なのだ！</button>
-        <p style="font-size:14px; color:#7dc065; font-weight:bold; margin-top:15px;">とどめをスッキリさせたのだ！</p>
+        <p style="font-size:14px; color:#7dc065; font-weight:bold; margin-top:15px;">敵のピンチもしっかり見えるのだ！</p>
     </div>
 
     <div id="result-screen" class="full-overlay" style="display:none;">
@@ -84,6 +84,11 @@
         tick: new Audio('sounds/se_tick.mp3'),
         heal: new Audio('sounds/se_heal.mp3'),
         defeat: new Audio('sounds/se_defeat.mp3'),
+        comboSE: new Audio('sounds/se_combo.mp3'),
+        vCombo1: new Audio('sounds/voice_combo1.mp3'),
+        vCombo2: new Audio('sounds/voice_combo2.mp3'),
+        vCombo3: new Audio('sounds/voice_combo3.mp3'),
+        vCombo4: new Audio('sounds/voice_combo4.mp3'),
         vPromo: new Audio('sounds/voice_promo.mp3')
     };
 
@@ -201,7 +206,7 @@
 
     function startGame() {
         Object.values(sounds).forEach(s => { try{ s.play(); s.pause(); s.currentTime=0; }catch(e){} });
-        sounds.vPromo.volume = 1.0; sounds.tick.volume = 1.0; sounds.bgm.volume = 0.1; sounds.bgm.loop = true;
+        sounds.vPromo.volume = 1.0; sounds.tick.volume = 1.0; sounds.comboSE.volume = 1.0; sounds.bgm.volume = 0.1; sounds.bgm.loop = true;
         document.getElementById('start-screen').style.display = 'none';
         sounds.bgm.play().catch(e => {});
         updateUI(); loadQuiz();
@@ -227,13 +232,20 @@
                 clearInterval(timerId);
                 if(i === q.a) {
                     streak++; score += (100 + (streak > 1 ? streak * 25 : 0));
-                    eHp -= 34;
-                    // ★ここを修正なのだ！まだ生きてる時だけ正解音を鳴らすのだ
+                    
+                    // ★ダメージを25に調整！これで100→75→50→25→0となるのだ
+                    eHp -= 25; 
+
                     if (eHp > 0) {
                         sounds.ok.play().catch(e=>{});
+                        setTimeout(() => {
+                            if (streak > 1) { sounds.comboSE.currentTime = 0; sounds.comboSE.play().catch(e=>{}); }
+                            let voice = sounds["vCombo" + Math.min(streak, 4)];
+                            if (voice) { voice.currentTime = 0; voice.play().catch(e=>{}); }
+                        }, 400);
+                        if(streak > 1) showCombo();
                     }
                     document.getElementById('main-illust').src = "images/gemini_attack_weak.png";
-                    if(streak > 1) showCombo();
                 } else {
                     streak = 0; hp -= 20; 
                     sounds.ng.play().catch(e=>{});
@@ -259,15 +271,18 @@
     }
 
     function updateUI() {
+        // プレイヤーHP
         const pFill = document.getElementById('player-hp-fill');
         pFill.style.width = hp + "%";
         if (hp > 60) pFill.style.backgroundColor = "#7dc065";
         else if (hp > 30) pFill.style.backgroundColor = "#ffda44";
         else pFill.style.backgroundColor = "#f47b7b";
 
+        // 敵HP
         const eFill = document.getElementById('enemy-hp-fill');
         const dEhp = Math.max(0, eHp);
         eFill.style.width = dEhp + "%";
+        // ★ここを厳密に。25%になれば確実に赤色なのだ！
         if (dEhp > 60) eFill.style.backgroundColor = "#7dc065";
         else if (dEhp > 30) eFill.style.backgroundColor = "#ffda44";
         else eFill.style.backgroundColor = "#f47b7b";
@@ -279,7 +294,6 @@
     function checkBattle() {
         if(hp <= 0) { setTimeout(endGame, 1000); }
         else if(eHp <= 0) { 
-            // ★とどめの時はこっちの音だけが鳴るのだ！
             sounds.defeat.play().catch(e=>{});
             let hb = hp * 10, mb = mochi * 200, tb = 500 + hb + mb;
             score += tb; defCount++; eHp = 100; 
