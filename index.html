@@ -3,79 +3,186 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
-    <title>ずんだ豆知識RPG - 百問耐久編なのだ</title>
+    <title>ずんだ豆知識RPG - 百問耐久・覚醒編</title>
     <style>
         body { background-color: #f0f0f0; margin: 0; display: flex; justify-content: center; height: 100vh; overflow: hidden; font-family: sans-serif; }
-        #game-container { width: 100%; max-width: 480px; height: 100%; background: #fff; border: 12px solid #7dc065; box-sizing: border-box; display: flex; flex-direction: column; position: relative; }
-        #top-battle-area { background-color: #bce6f9; flex: 1.2; padding: 20px 15px 10px 15px; display: flex; flex-direction: column; align-items: center; position: relative; gap: 10px; }
-        .status-pill { background: #fff; border: 3px solid #000; border-radius: 40px; padding: 5px 15px; display: flex; align-items: center; gap: 10px; box-shadow: 0 4px 0 rgba(0,0,0,0.1); width: 85%; max-width: 350px; }
-        .hp-bg { flex: 1; height: 14px; background: #eee; border-radius: 7px; border: 2px solid #999; overflow: hidden; }
+        
+        #game-container { 
+            width: 100%; max-width: 480px; height: 100vh; background: #fff; 
+            border: 8px solid #7dc065; box-sizing: border-box; 
+            display: flex; flex-direction: column; position: relative; overflow: hidden;
+        }
+        
+        /* バトルエリア：PCでもはみ出さないよう高さを調整 */
+        #top-battle-area { 
+            background-color: #bce6f9; height: 45%; min-height: 280px;
+            padding: 10px 15px; display: flex; flex-direction: column; 
+            align-items: center; position: relative; gap: 5px; overflow: hidden; 
+        }
+        
+        #combo-aura { position: absolute; top:0; left:0; width:100%; height:100%; pointer-events: none; opacity: 0; transition: 0.5s; background: radial-gradient(circle, rgba(255,165,0,0.5) 0%, rgba(255,69,0,0) 70%); z-index: 1; }
+
+        .status-pill { background: #fff; border: 3px solid #000; border-radius: 40px; padding: 4px 12px; display: flex; align-items: center; gap: 8px; box-shadow: 0 4px 0 rgba(0,0,0,0.1); width: 85%; max-width: 350px; z-index: 10; }
+        .hp-bg { flex: 1; height: 12px; background: #eee; border-radius: 6px; border: 2px solid #999; overflow: hidden; }
         .hp-fill { height: 100%; width: 100%; transition: width 0.3s, background-color 0.3s; background: #7dc065; }
-        #main-action-view { flex: 1; display: flex; justify-content: center; align-items: center; padding: 10px; position: relative; width: 100%; }
-        #main-illust { width: 100%; max-height: 200px; object-fit: contain; border: 3px solid #333; background: #fff; border-radius: 10px; }
-        #combo-pop { position: absolute; top: 20%; left: 50%; transform: translateX(-50%); color: #ff9800; font-size: 40px; font-weight: bold; text-shadow: 3px 3px 0 #fff; opacity: 0; z-index: 100; transition: 0.3s; pointer-events: none; }
-        #bottom-ui-area { flex: 1; background: #fff; border-top: 8px solid #7dc065; padding: 15px 20px; }
-        #timer-bg { width: 100%; height: 18px; background: #eee; border: 3px solid #333; border-radius: 10px; overflow: hidden; margin-bottom: 10px; }
+
+        #main-action-view { flex: 1; display: flex; justify-content: center; align-items: center; width: 100%; z-index: 5; overflow: hidden; }
+        #main-illust { max-width: 100%; max-height: 160px; object-fit: contain; border: 3px solid #333; background: #fff; border-radius: 10px; }
+        
+        #combo-pop { position: absolute; top: 15%; left: 50%; transform: translateX(-50%); color: #ff9800; font-size: 36px; font-weight: bold; text-shadow: 2px 2px 0 #fff; opacity: 0; z-index: 100; pointer-events: none; }
+        .max-combo-active { color: #ff3d00 !important; font-size: 50px !important; animation: pulse-anim 0.5s infinite alternate; }
+
+        /* UIエリア：ここが押し出されないように高さを確保 */
+        #bottom-ui-area { 
+            flex: 1; background: #fff; border-top: 6px solid #7dc065; 
+            padding: 10px 15px; z-index: 20; display: flex; flex-direction: column;
+        }
+        
+        #timer-bg { width: 100%; height: 14px; background: #eee; border: 2px solid #333; border-radius: 7px; overflow: hidden; margin-bottom: 8px; }
         #timer-bar { height: 100%; width: 100%; background: #f47b7b; }
-        #question-box { background: #333; color: #fff; border-radius: 15px; padding: 15px; text-align: center; font-size: 16px; font-weight: bold; min-height: 70px; display: flex; align-items: center; justify-content: center; margin-bottom: 10px; line-height: 1.4; }
-        .choice-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
-        .choice-btn { background: #fff; border: 3px solid #7dc065; border-radius: 12px; padding: 12px; font-weight: bold; font-size: 14px; cursor: pointer; box-shadow: 0 4px 0 #5a9e43; }
-        .full-overlay { position: absolute; top:0; left:0; width:100%; height:100%; background:rgba(255,255,255,0.98); z-index:2000; display:flex; flex-direction:column; justify-content:center; align-items:center; text-align:center; padding:20px; box-sizing:border-box; overflow-y: auto; }
+        
+        #question-box { 
+            background: #333; color: #fff; border-radius: 12px; padding: 10px; 
+            text-align: center; font-size: 15px; font-weight: bold; 
+            min-height: 60px; display: flex; align-items: center; justify-content: center; 
+            margin-bottom: 10px; line-height: 1.4;
+        }
+        
+        .choice-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; flex: 1; }
+        .choice-btn { background: #fff; border: 3px solid #7dc065; border-radius: 10px; padding: 8px 4px; font-weight: bold; font-size: 13px; cursor: pointer; box-shadow: 0 3px 0 #5a9e43; display: flex; align-items: center; justify-content: center; }
+        
+        .full-overlay { position: absolute; top:0; left:0; width:100%; height:100%; background:rgba(255,255,255,0.98); z-index:2000; display:flex; flex-direction:column; justify-content:center; align-items:center; text-align:center; padding:20px; box-sizing:border-box; }
         .big-btn { padding: 15px 40px; font-size: 20px; font-weight: bold; background: #7dc065; color: white; border: none; border-radius: 40px; cursor: pointer; box-shadow: 0 6px 0 #5a9e43; }
-        #promo-box { border: 6px solid #f47b7b; border-radius: 15px; padding: 10px; background: #fff; margin: 10px 0; width: 100%; }
-        .rank-table { width: 100%; border-collapse: collapse; font-size: 14px; }
-        .rank-table th { background: #7dc065; color: white; padding: 5px; }
-        .rank-table td { border-bottom: 1px solid #ddd; padding: 5px; font-weight: bold; }
-        .shake { animation: shake 0.5s; }
-        @keyframes shake { 0%{transform:translate(2px,2px)} 25%{transform:translate(-3px,-2px)} 50%{transform:translate(3px,2px)} 100%{transform:translate(0,0)} }
+
+        #bonus-pop-up { position: absolute; top: 40%; left: 50%; transform: translate(-50%, -50%); color: #ff3d00; font-size: 28px; font-weight: bold; text-shadow: 2px 2px 0 #fff; background: rgba(255,255,255,0.95); padding: 10px; border-radius: 15px; border: 4px solid #ff9800; display: none; z-index: 500; text-align: center; }
+
+        /* 宣伝ボックスの新しいデザイン */
+        #promo-box {
+            border: 4px solid #f47b7b;
+            border-radius: 20px;
+            padding: 15px;
+            background: linear-gradient(to bottom, #fff, #ffebeb);
+            margin: 15px 0;
+            width: 90%;
+            box-shadow: 0 8px 16px rgba(244, 123, 123, 0.3);
+            text-decoration: none;
+            display: block;
+            color: inherit;
+            transition: transform 0.2s;
+        }
+        #promo-box:active { transform: scale(0.98); }
+        .promo-title {
+            color: #d32f2f;
+            font-weight: 900;
+            margin: 0 0 10px 0;
+            font-size: 18px;
+            text-shadow: 1px 1px 0 #fff, 2px 2px 0 rgba(211, 47, 47, 0.2);
+        }
+        .promo-content {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 15px;
+        }
+        .promo-img {
+            width: 100px;
+            border-radius: 12px;
+            border: 3px solid #f47b7b;
+            box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+        }
+        .promo-btn {
+            background: linear-gradient(to bottom, #7dc065, #5a9e43);
+            color: white;
+            padding: 10px 20px;
+            border-radius: 30px;
+            font-weight: bold;
+            font-size: 16px;
+            box-shadow: 0 4px 0 #3e7a2e;
+            text-shadow: 1px 1px 0 #3e7a2e;
+            display: inline-block;
+        }
+
+        @keyframes pulse-anim { from { transform: translateX(-50%) scale(1); } to { transform: translateX(-50%) scale(1.1); } }
+        .shake-screen { animation: shake 0.3s; }
+        @keyframes shake { 0%,100%{transform:translate(0,0)} 25%{transform:translate(4px,4px)} 75%{transform:translate(-4px,-4px)} }
     </style>
 </head>
 <body>
 
 <div id="game-container">
+    <div id="bonus-pop-up">MAX COMBO BONUS!</div>
+
     <div id="start-screen" class="full-overlay">
-        <img src="images/game_title.png" style="width:90%; margin-bottom:20px; border:4px solid #7dc065; border-radius:15px;">
-        <button id="btn-start" class="big-btn">冒険開始なのだ！</button>
-        <p style="font-size:14px; color:#7dc065; font-weight:bold; margin-top:15px;">敵のピンチもしっかり見えるのだ！</p>
+        <img src="images/game_title.png" style="width:80%; margin-bottom:20px; border:4px solid #7dc065; border-radius:15px;">
+        <button id="btn-start-game" class="big-btn">冒険開始なのだ！</button>
+        <p id="loading-msg" style="font-size:14px; color:#7dc065; font-weight:bold; margin-top:15px;">プログラム読み込み中...</p>
+        <div id="err-log" style="color:red; font-size:10px; display:none;"></div>
     </div>
 
     <div id="result-screen" class="full-overlay" style="display:none;">
         <h2 style="margin:0;">結果発表なのだ！</h2>
         <div style="font-size:40px; font-weight:bold; color:#ff9800; margin:5px 0;"><span id="final-score">0</span>点</div>
-        <div id="promo-box">
-            <p style="color:#f47b7b; font-weight:bold; margin:0 0 5px 0;">もっとずんだもんしゃべるのだ！</p>
-            <a href="https://line.me/S/sticker/32533905" target="_blank">
-                <img src="images/IMG_0294.PNG" style="width:100px; border-radius:5px;">
-                <div style="background:#7dc065; color:white; padding:8px; border-radius:10px; margin-top:8px; font-weight:bold; font-size:14px;">スタンプを見るのだ！</div>
-            </a>
-        </div>
-        <table class="rank-table"><thead><tr><th>位</th><th>名</th><th>点</th></tr></thead><tbody id="rank-body"></tbody></table>
+        
+        <a href="https://line.me/S/sticker/32533905" target="_blank" id="promo-box">
+            <p class="promo-title">＼ もっとずんだもんしゃべるのだ！ ／</p>
+            <div class="promo-content">
+                <img src="images/IMG_0294.PNG" class="promo-img">
+                <div>
+                    <div class="promo-btn">スタンプを見るのだ！</div>
+                </div>
+            </div>
+        </a>
+
+        <table class="rank-table" style="width:100%; border-collapse:collapse;"><tbody id="rank-body"></tbody></table>
         <button class="big-btn" onclick="location.reload()" style="background:#ffda44; color:#333; margin-top:15px;">もう一度遊ぶ</button>
     </div>
 
+    <div id="all-clear-screen" class="full-overlay" style="display:none;">
+        <h2 style="margin:0; color:#7dc065; font-size:24px;">🎉100問完全制覇なのだ！🎉</h2>
+        <div style="font-size:32px; font-weight:bold; color:#ff9800; margin:5px 0;"><span id="clear-score">0</span>点</div>
+        <a href="#" style="display:block; margin:10px 0; border:4px solid #ffda44; border-radius:15px; overflow:hidden; width:90%;">
+            <p style="background:#ffda44; margin:0; padding:5px; font-weight:bold; color:#333; font-size:12px;">▼ 次の冒険を選ぶのだ！ ▼</p>
+            <img src="images/next_stage_banner.png" style="width:100%; display:block;" alt="次ステージ">
+        </a>
+        <table class="rank-table" style="width:100%; border-collapse:collapse;"><tbody id="clear-rank-body"></tbody></table>
+        <button class="big-btn" onclick="location.reload()" style="padding:10px 30px; font-size:16px;">最初から遊ぶ</button>
+    </div>
+
     <div id="top-battle-area">
+        <div id="combo-aura"></div>
         <div class="status-pill" style="align-self: flex-start;">
-            <img id="enemy-thumb" src="images/enemy_weak.png" style="width:35px; height:35px; object-fit:contain;">
+            <img id="enemy-thumb" src="images/enemy_weak.png" style="width:30px; height:30px;">
             <div class="hp-bg"><div id="enemy-hp-fill" class="hp-fill"></div></div>
         </div>
-        <div id="main-action-view"><div id="combo-pop">0 COMBO!</div><img id="main-illust" src="images/gemini_zunda_think.png"></div>
+        <div id="main-action-view">
+            <div id="combo-pop">0 COMBO!</div>
+            <img id="main-illust" src="images/gemini_zunda_think.png">
+        </div>
         <div class="status-pill" style="align-self: flex-end;">
             <div class="hp-bg"><div id="player-hp-fill" class="hp-fill"></div></div>
-            <img src="images/gemini_zunda_think.png" style="width:35px; height:35px; border-radius:50%; border:2px solid #7dc065;">
+            <img src="images/gemini_zunda_think.png" style="width:30px; height:30px; border-radius:50%; border:2px solid #7dc065;">
         </div>
     </div>
 
     <div id="bottom-ui-area">
-        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px;">
-            <div id="btn-item" style="border:3px solid #7dc065; padding:4px 10px; border-radius:10px; cursor:pointer; background:#fff;">🍡 x<span id="mochi-val">3</span></div>
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:5px;">
+            <div id="btn-mochi" style="border:2px solid #7dc065; padding:2px 8px; border-radius:8px; cursor:pointer; background:#fff; font-size:12px; font-weight:bold;">🍡 x<span id="mochi-val">3</span></div>
             <div id="timer-bg" style="flex:1; margin:0 10px;"><div id="timer-bar"></div></div>
-            <div style="font-weight:bold; color:#ff9800;">SCORE: <span id="score-val">0</span></div>
+            <div style="font-weight:bold; color:#ff9800; font-size:14px;">SCORE: <span id="score-val">0</span></div>
         </div>
-        <div id="question-box"></div><div id="choices" class="choice-grid"></div>
+        <div style="text-align:right; font-size:11px; color:#7dc065; font-weight:bold; margin-bottom:2px;">正解数: <span id="correct-count">0</span>/100</div>
+        <div id="question-box"></div>
+        <div id="choices" class="choice-grid"></div>
     </div>
 </div>
 
 <script>
+    window.onerror = function(m, u, l) {
+        document.getElementById('err-log').style.display = 'block';
+        document.getElementById('err-log').innerText = m + " (" + l + "行目)";
+        document.getElementById('loading-msg').innerText = "エラー発生なのだ...";
+    };
+
     const sounds = {
         bgm: new Audio('sounds/bgm_thinking.mp3'),
         result: new Audio('sounds/bgm_result.mp3'),
@@ -92,117 +199,15 @@
         vPromo: new Audio('sounds/voice_promo.mp3')
     };
 
+    // ★文字化け対策版クイズデータ
     const masterQuizData = {
-        weak: [
-            {q:"パンダの尻尾の色は何色？", c:["黒","白","しま"], a:1},
-            {q:"イチゴの表面にある粒の正体は？", c:["種","果実","茎"], a:1},
-            {q:"バナナは「木」ではなく何の仲間？", c:["草","ヤシ","サボテン"], a:0},
-            {q:"タコの心臓はいくつある？", c:["1つ","2つ","3つ"], a:2},
-            {q:"キリンの角は何本ある？", c:["2本","3本","5本"], a:2},
-            {q:"シマウマの地肌の色は何色？", c:["白","黒","ピンク"], a:1},
-            {q:"セミが鳴くのはどっち？", c:["オス","メス","両方"], a:0},
-            {q:"コアラが1日に寝る時間は？", c:["12h","18h","22h"], a:2},
-            {q:"ラッコが寝る時に流されない工夫は？", c:["岩をつかむ","海藻を巻く","手を繋ぐ"], a:1},
-            {q:"世界で一番速い鳥はどれ？", c:["ハヤブサ","ダチョウ","ツバメ"], a:0},
-            {q:"ペンギンの膝は、実はどうなっている？", c:["ない","曲がっている","まっすぐ"], a:1},
-            {q:"カラスは色を識別できる？", c:["できない","少し","人間より見える"], a:2},
-            {q:"ブロッコリーで一番栄養がある部分は？", c:["茎","つぼみ","葉"], a:0},
-            {q:"猫の耳を動かす筋肉は人間の何倍？", c:["3倍","10倍","30倍"], a:2},
-            {q:"アリの平均的な寿命はどれくらい？", c:["数週間","1～2年","10年以上"], a:1},
-            {q:"カタツムリには歯がある？", c:["ない","100本くらい","1万本以上"], a:2},
-            {q:"サメの骨は何でできている？", c:["カルシウム","軟骨","鉄"], a:1},
-            {q:"ラフレシアの花の匂いは？", c:["甘い","無臭","腐った肉"], a:2},
-            {q:"ヒマワリは太陽をずっと追いかける？", c:["若い時だけ","ずっと","追わない"], a:0},
-            {q:"ワニの性別は何で決まる？", c:["遺伝","卵の時の温度","運"], a:1},
-            {q:"カンガルーの赤ちゃん、生まれた大きさは？", c:["約2cm","約10cm","約30cm"], a:0},
-            {q:"カメレオンの色が変わる主な理由は？", c:["隠れるため","感情・温度","擬態"], a:1},
-            {q:"フクロウの首は何度まで回る？", c:["180度","270度","360度"], a:1},
-            {q:"ライオンの狩りをするのは主にどっち？", c:["オス","メス","子供"], a:1},
-            {q:"象がジャンプできない唯一の哺乳類？", c:["本当","嘘","種類による"], a:0},
-            {q:"ホッキョクグマの地肌の色は何色？", c:["白","ピンク","黒"], a:2},
-            {q:"リスはどんぐりを埋めた場所を覚えている？", c:["全部","半分","ほとんど忘れる"], a:2},
-            {q:"ウサギの耳が長い最大の理由は？", c:["集音","放熱","可愛いから"], a:1},
-            {q:"日本で一番高い山はどれ？", c:["富士山","北岳","阿蘇山"], a:0},
-            {q:"蚊の主食は本来何？", c:["血","花の蜜","水"], a:1},
-            {q:"カバの汗の色は何色に見える？", c:["透明","青","ピンク"], a:2},
-            {q:"世界一足が速い陸上動物は？", c:["ライオン","チーター","ガゼル"], a:1},
-            {q:"トウモロコシのひげの数は何と同じ？", c:["葉の数","根の数","粒の数"], a:2},
-            {q:"リンゴを水に浮かべるとどうなる？", c:["沈む","浮く","回転する"], a:1}
-        ],
-        mid: [
-            {q:"ダイヤモンドの成分は、実は何と同じ？", c:["鉄","炭素","石灰"], a:1},
-            {q:"宇宙空間で泣くと、涙はどうなる？", c:["落ちる","蒸発","目に留まる"], a:2},
-            {q:"日本の1円玉の直径は何cm？", c:["1cm","2cm","3cm"], a:1},
-            {q:"火星が赤く見える理由は？", c:["火が多い","錆びた鉄","暑い"], a:1},
-            {q:"地球の自転、1時間は何度？", c:["10度","15度","24度"], a:1},
-            {q:"世界一面積が広い国はどこ？", c:["カナダ","アメリカ","ロシア"], a:2},
-            {q:"マチュピチュ遺跡がある国はどこ？", c:["ペルー","チリ","メキシコ"], a:0},
-            {q:"人体で一番硬い部分はどこ？", c:["頭の骨","歯のエナメル質","太もも"], a:1},
-            {q:"雲は何でできている？", c:["煙","水や氷の粒","空気"], a:1},
-            {q:"フランスの首都はどこ？", c:["ベルリン","ロンドン","パリ"], a:2},
-            {q:"月まで光が届く時間は約何秒？", c:["1.3秒","8秒","60秒"], a:0},
-            {q:"骨の数は、赤ちゃんの方が大人より多い？", c:["本当","嘘","同じ"], a:0},
-            {q:"世界で一番長い川はどれ？", c:["アマゾン","ナイル","ミシシッピ"], a:1},
-            {q:"金（ゴールド）は錆びる？", c:["錆びる","錆びない","条件による"], a:1},
-            {q:"オリンピック五輪の左端の色は？", c:["青","黄色","赤"], a:0},
-            {q:"日本で一番広い湖はどれ？", c:["霞ヶ浦","琵琶湖","サロマ湖"], a:1},
-            {q:"太陽の表面温度は約何度？", c:["1000度","6000度","100万度"], a:1},
-            {q:"ピアノの鍵盤の数は全部でいくつ？", c:["80","88","92"], a:1},
-            {q:"虹の色、一番外側（上）は何色？", c:["紫","赤","黄色"], a:1},
-            {q:"雷の音の速さは1秒間に約何m？", c:["340m","30万km","1km"], a:0},
-            {q:"日本最南端の島はどれ？", c:["沖ノ鳥島","与那国島","竹富島"], a:0},
-            {q:"エッフェル塔がある都市はどこ？", c:["ローマ","パリ","マドリード"], a:1},
-            {q:"トランプの合計(J抜き)を足すと？", c:["364","365","366"], a:1},
-            {q:"人間の心臓は1日に約何回打つ？", c:["1万回","5万回","10万回"], a:2},
-            {q:"日本の1円玉は、アルミ100％？", c:["本当","嘘","条件による"], a:0},
-            {q:"空気中に一番多い気体はどれ？", c:["酸素","二酸化炭素","窒素"], a:2},
-            {q:"ハチミツは腐らない？", c:["本当","嘘","半年で腐る"], a:0},
-            {q:"南極と北極、どっちの方が寒い？", c:["南極","北極","同じ"], a:0},
-            {q:"自由の女神が左手に持っているのは？", c:["聖書","独立宣言書","憲法"], a:1},
-            {q:"アインシュタインが受賞した賞は？", c:["物理学賞","化学賞","平和賞"], a:0},
-            {q:"血液型、世界で一番多いのは？", c:["A型","B型","O型"], a:2},
-            {q:"パンは英語？", c:["はい","いいえ","実はポルトガル語"], a:1},
-            {q:"日本の5円玉に穴がある理由は？", c:["節約","紐を通す","偽造防止"], a:0},
-            {q:"1マイルは約何キロメートル？", c:["1km","1.6km","2km"], a:1}
-        ],
-        boss: [
-            {q:"光は1秒間に地球を約何周する？", c:["3周","7周半","10周"], a:1},
-            {q:"将棋で、裏返っても名前が変わらないのは？", c:["飛車","角行","王将"], a:2},
-            {q:"原子番号1番の元素は何？", c:["ヘリウム","水素","リチウム"], a:1},
-            {q:"マリアナ海溝の深さは約何m？", c:["5000m","8000m","1万m以上"], a:2},
-            {q:"ニュートンが引力に気づいた果物は？", c:["桃","オレンジ","リンゴ"], a:2},
-            {q:"日本の初代内閣総理大臣は？", c:["伊藤博文","福沢諭吉","織田信長"], a:0},
-            {q:"モナ・リザを描いたのは誰？", c:["ピカソ","ダ・ヴィンチ","ゴッホ"], a:1},
-            {q:"1兆の1000倍を何と呼ぶ？", c:["垓","京","穣"], a:1},
-            {q:"ナポレオンが最後に流された島は？", c:["エルバ","セントヘレナ","コルシカ"], a:1},
-            {q:"太陽系で一番大きい惑星は？", c:["土星","天王星","木星"], a:2},
-            {q:"ピラミッドが作られた主な目的は？", c:["天文台","お墓","穀物庫"], a:1},
-            {q:"第九を書いた作曲家は誰？", c:["ベートーヴェン","モーツァルト","バッハ"], a:0},
-            {q:"月の周期は約何日？", c:["28日","29.5日","31日"], a:1},
-            {q:"南極にある日本の観測基地といえば？", c:["昭和基地","平成基地","大和基地"], a:0},
-            {q:"ハワイはアメリカの何番目の州？", c:["48","49","50"], a:2},
-            {q:"オーロラが発生するのはどの層？", c:["対流圏","成層圏","熱圏"], a:2},
-            {q:"人間のDNA、チンパンジーと何％同じ？", c:["80％","90％","98％以上"], a:2},
-            {q:"宇宙の始まりとされる爆発は？", c:["ビッグバン","ノヴァ","ブラックホール"], a:0},
-            {q:"面積が世界一小さい国は？", c:["モナコ","バチカン","ナウル"], a:1},
-            {q:"ノーベルが発明したのは？", c:["電球","電話","ダイナマイト"], a:2},
-            {q:"土俵の直径は何メートル？", c:["4m24cm","4m55cm","5m"], a:1},
-            {q:"ブルジュ・ハリファがある都市は？", c:["ドバイ","上海","ニューヨーク"], a:0},
-            {q:"光が1年間に進む距離を何という？", c:["1マイル","1光年","1パーセク"], a:1},
-            {q:"イタリアの通貨、ユーロの前は？", c:["フラン","リラ","マルク"], a:1},
-            {q:"アポロ11号が月面着陸に成功したのは？", c:["1964","1969","1972"], a:1},
-            {q:"将棋盤のマス目は全部でいくつ？", c:["64","81","100"], a:1},
-            {q:"東京タワーの高さは何メートル？", c:["300m","333m","634m"], a:1},
-            {q:"世界一長いとされる小説はどれ？", c:["戦争と平和","失われた時を求めて","源氏"], a:1},
-            {q:"野球のダイヤモンド1辺は約何m？", c:["25m","27.4m","30m"], a:1},
-            {q:"地球から一番近い恒星(太陽以外)は？", c:["シリウス","プロキシマ","ベガ"], a:1},
-            {q:"日本初の鉄道が走ったのはどこ間？", c:["新橋～横浜","上野～浅草","東京～大阪"], a:0},
-            {q:"一円玉は何グラム？", c:["1g","2g","5g"], a:0}
-        ]
+        weak: [{q:"パンダの尻尾の色は何色？",c:["黒色","白色","しま模様"],a:1},{q:"イチゴの表面の粒の正体は？",c:["種","果実","茎"],a:1},{q:"バナナは何の仲間？",c:["草の仲間","木の仲間","ヤシの仲間"],a:0},{q:"タコの心臓はいくつある？",c:["1つ","2つ","3つ"],a:2},{q:"キリンの角は何本ある？",c:["2本","3本","5本"],a:2},{q:"シマウマの地肌の色は何色？",c:["白色","黒色","桃色"],a:1},{q:"セミが鳴くのはどっち？",c:["オス","メス","両方"],a:0},{q:"コアラの平均睡眠時間は？",c:["12時間","18時間","22時間"],a:2},{q:"ラッコが流されない工夫は？",c:["岩を掴む","海藻を体に巻く","手を繋ぐ"],a:1},{q:"一番速く飛ぶ鳥は？",c:["ハヤブサ","ダチョウ","ツバメ"],a:0},{q:"ペンギンの膝はどうなっている？",c:["ない","曲がっている","直立している"],a:1},{q:"カラスは色を識別できる？",c:["できない","少しできる","人間より見える"],a:2},{q:"ブロッコリーの栄養源はどこ？",c:["茎","つぼみ","葉"],a:0},{q:"猫の耳を動かす筋肉は人の何倍？",c:["3倍","10倍","30倍"],a:2},{q:"アリの平均寿命はどれくらい？",c:["数週間","1年から2年","10年以上"],a:1},{q:"カタツムリの歯の数は？",c:["0本","100本","1万本以上"],a:2},{q:"サメの骨は何でできている？",c:["普通の骨","軟骨","鉄分"],a:1},{q:"ラフレシアの花の匂いは？",c:["甘い匂い","無臭","腐った肉の匂い"],a:2},{q:"ヒマワリが太陽を追うのは？",c:["若い時だけ","ずっと追う","追わない"],a:0},{q:"ワニの性別を決める要因は？",c:["遺伝","卵の時の温度","運"],a:1},{q:"カンガルー誕生時のサイズは？",c:["約2cm","約10cm","約30cm"],a:0},{q:"カメレオンの色変え理由は？",c:["隠れるため","感情や温度","擬態のため"],a:1},{q:"フクロウの首の回転角度は？",c:["180度","270度","360度"],a:1},{q:"ライオンの狩り担当は主にどっち？",c:["オス","メス","子供"],a:1},{q:"象はジャンプできる？",c:["できない","できる","種類による"],a:0},{q:"ホッキョクグマの地肌は何色？",c:["白色","桃色","黒色"],a:2},{q:"リスの埋めた場所の記憶は？",c:["完璧に覚えている","半分忘れる","ほとんど忘れる"],a:2},{q:"ウサギの耳が長い理由は？",c:["音を集めるため","体温を逃がすため","可愛いから"],a:1},{q:"日本一高い山はどれ？",c:["富士山","北岳","阿蘇山"],a:0},{q:"蚊の主食は本来何？",c:["血","花の蜜","水"],a:1},{q:"カバの汗の色は何色に見える？",c:["透明","青色","桃色"],a:2},{q:"最速の陸上動物は？",c:["ライオン","チーター","ガゼル"],a:1},{q:"トウモロコシのひげは？",c:["葉の数","根の数","粒の数"],a:2},{q:"リンゴを水に入れるとどうなる？",c:["沈む","浮く","回転する"],a:1}],
+        mid: [{q:"ダイヤの正体は何と同じ成分？",c:["鉄","炭素","石灰"],a:1},{q:"宇宙で泣くと涙はどうなる？",c:["落ちる","蒸発する","目に留まる"],a:2},{q:"1円玉の直径は何cm？",c:["1cm","2cm","3cm"],a:1},{q:"火星が赤い理由は？",c:["火がある","錆びた鉄がある","暑いから"],a:1},{q:"地球の自転、1時間は何度？",c:["10度","15度","24度"],a:1},{q:"面積が世界一の国は？",c:["カナダ","アメリカ","ロシア"],a:2},{q:"マチュピチュがある国は？",c:["ペルー","チリ","メキシコ"],a:0},{q:"体で一番硬い部分はどこ？",c:["頭の骨","歯のエナメル質","大腿骨"],a:1},{q:"雲の成分は何？",c:["煙","水や氷の粒","空気"],a:1},{q:"フランスの首都は？",c:["ベルリン","ロンドン","パリ"],a:2},{q:"光が月に届く時間は？",c:["約1.3秒","約8分","約1時間"],a:0},{q:"赤ちゃんの骨の数は大人より？",c:["多い","少ない","同じ"],a:0},{q:"世界一長い川は？",c:["アマゾン川","ナイル川","長江"],a:1},{q:"金は錆びる？",c:["錆びる","錆びない","条件次第"],a:1},{q:"五輪旗の左端の色は？",c:["青色","黄色","赤色"],a:0},{q:"日本一広い湖は？",c:["霞ヶ浦","琵琶湖","サロマ湖"],a:1},{q:"太陽表面の温度は約何度？",c:["1000度","6000度","100万度"],a:1},{q:"ピアノの鍵盤の数は？",c:["80個","88個","92個"],a:1},{q:"虹の一番上の色は？",c:["紫色","赤色","黄色"],a:1},{q:"雷の音速は1秒間に約何m？",c:["340m","30万km","1km"],a:0},{q:"日本最南端の島は？",c:["沖ノ鳥島","与那国島","竹富島"],a:0},{q:"エッフェル塔がある街は？",c:["ローマ","パリ","マドリード"],a:1},{q:"トランプ合計(J抜き)は？",c:["364","365","366"],a:1},{q:"心臓は1日に約何回打つ？",c:["1万回","5万回","10万回"],a:2},{q:"1円玉は純アルミニウム？",c:["そうです","違います","混合です"],a:0},{q:"空気に一番多い気体は？",c:["酸素","二酸化炭素","窒素"],a:2},{q:"ハチミツは腐る？",c:["腐らない","腐る","半年で腐る"],a:0},{q:"南極と北極どっちが寒い？",c:["南極","北極","同じくらい"],a:0},{q:"自由の女神が持つのは？",c:["聖書","独立宣言書","憲法"],a:1},{q:"アインシュタインの賞は？",c:["物理学賞","化学賞","平和賞"],a:0},{q:"最多の血液型は世界で？",c:["A型","B型","O型"],a:2},{q:"パンの語源は何語？",c:["英語","フランス語","ポルトガル語"],a:2},{q:"5円玉に穴がある理由は？",c:["材料節約","紐を通す","偽造防止"],a:0},{q:"1マイルは約何キロ？",c:["1km","1.6km","2km"],a:1}],
+        boss: [{q:"光は1秒で地球を何周する？",c:["約3周","約7.5周","約10周"],a:1},{q:"将棋で裏返っても名不変なのは？",c:["飛車","角行","王将"],a:2},{q:"原子番号1番の元素は？",c:["ヘリウム","水素","リチウム"],a:1},{q:"マリアナ海溝の深さは？",c:["約5000m","約8000m","1万m以上"],a:2},{q:"引力を発見したきっかけの果物？",c:["桃","オレンジ","リンゴ"],a:2},{q:"日本の初代総理大臣は？",c:["伊藤博文","福沢諭吉","織田信長"],a:0},{q:"モナリザの作者は誰？",c:["ピカソ","ダヴィンチ","ゴッホ"],a:1},{q:"1兆の1000倍を何と呼ぶ？",c:["垓","京","穣"],a:1},{q:"太陽系最大の惑星は？",c:["土星","天王星","木星"],a:2},{q:"ピラミッドが作られた目的は？",c:["天文台","王の墓","穀物庫"],a:1},{q:"第九の作曲家は誰？",c:["ベートーヴェン","モーツァルト","バッハ"],a:0},{q:"月の満ち欠けの周期は何日？",c:["28日","29.5日","31日"],a:1},{q:"昭和基地がある場所は？",c:["南極","北極","月面"],a:0},{q:"ハワイはアメリカ何番目の州？",c:["48番目","49番目","50番目"],a:2},{q:"オーロラが発生する層は？",c:["対流圏","成層圏","熱圏"],a:2},{q:"人とDNAが98%同じなのは？",c:["サル","ブタ","チンパンジー"],a:2},{q:"宇宙創生の爆発名は？",c:["ビッグバン","ノヴァ","ブラックホール"],a:0},{q:"最小面積の国はどこ？",c:["モナコ","バチカン","ナウル"],a:1},{q:"ノーベルが発明したのは？",c:["電球","電話","ダイナマイト"],a:2},{q:"土俵の直径は何メートル？",c:["4.24m","4.55m","5m"],a:1},{q:"世界一高いビルがあるのは？",c:["ドバイ","上海","ニューヨーク"],a:0},{q:"光が1年間に進む距離を何という？",c:["1光年","1マイル","1パーセク"],a:0},{q:"イタリアのユーロ前の通貨は？",c:["フラン","リラ","マルク"],a:1},{q:"アポロ11号が月面着陸した年は？",c:["1964年","1969年","1972年"],a:1},{q:"将棋盤のマス目は全部でいくつ？",c:["64マス","81マス","100マス"],a:1},{q:"東京タワーの高さは何m？",c:["300m","333m","634m"],a:1},{q:"世界一長い小説とされるのは？",c:["戦争と平和","失われた時を求めて","源氏物語"],a:1},{q:"野球一辺のダイヤモンドの長さ？",c:["25m","27.4m","30m"],a:1},{q:"一円玉の重さは何グラム？",c:["1g","2g","5g"],a:0},{q:"日本の鉄道初走行区間はどこ？",c:["新橋から横浜","上野から浅草","東京から大阪"],a:0},{q:"富士山の高さは何メートル？",c:["3333m","3776m","4000m"],a:1},{q:"星座の数は全部でいくつ？",c:["12星座","48星座","88星座"],a:2}]
     };
 
-    let currentQuizPool = JSON.parse(JSON.stringify(masterQuizData));
-    let hp = 100, eHp = 100, score = 0, mochi = 3, streak = 0, defCount = 0, timerId = null;
+    let hp = 100, eHp = 100, score = 0, mochi = 3, streak = 0, defCount = 0, totalCorrect = 0, maxStreakThisTurn = 0;
+    let timerId = null, currentPool = JSON.parse(JSON.stringify(masterQuizData));
 
     function startGame() {
         Object.values(sounds).forEach(s => { try{ s.play(); s.pause(); s.currentTime=0; }catch(e){} });
@@ -214,9 +219,16 @@
 
     function loadQuiz() {
         if(hp <= 0) return;
+        if(totalCorrect >= 100) { showAllClearScreen(); return; }
+
         let type = (defCount >= 10) ? "boss" : (defCount >= 4) ? "mid" : "weak";
-        let pool = currentQuizPool[type];
-        if (pool.length === 0) pool = JSON.parse(JSON.stringify(masterQuizData[type]));
+        let pool = currentPool[type];
+        if (pool.length === 0) {
+             if(type === "weak") { defCount = 4; loadQuiz(); return; }
+             else if(type === "mid") { defCount = 10; loadQuiz(); return; }
+             else { showAllClearScreen(); return; }
+        }
+
         let qIdx = Math.floor(Math.random() * pool.length);
         let q = pool.splice(qIdx, 1)[0];
         
@@ -231,11 +243,10 @@
             btn.onclick = () => {
                 clearInterval(timerId);
                 if(i === q.a) {
-                    streak++; score += (100 + (streak > 1 ? streak * 25 : 0));
-                    
-                    // ★ダメージを25に調整！これで100→75→50→25→0となるのだ
+                    streak++; totalCorrect++;
+                    if(streak > maxStreakThisTurn) maxStreakThisTurn = streak;
+                    score += (100 + (streak > 1 ? streak * 25 : 0));
                     eHp -= 25; 
-
                     if (eHp > 0) {
                         sounds.ok.play().catch(e=>{});
                         setTimeout(() => {
@@ -243,15 +254,16 @@
                             let voice = sounds["vCombo" + Math.min(streak, 4)];
                             if (voice) { voice.currentTime = 0; voice.play().catch(e=>{}); }
                         }, 400);
-                        if(streak > 1) showCombo();
+                        showComboPop();
                     }
                     document.getElementById('main-illust').src = "images/gemini_attack_weak.png";
                 } else {
-                    streak = 0; hp -= 20; 
+                    checkComboBonus();
+                    streak = 0; maxStreakThisTurn = 0; hp -= 20; 
                     sounds.ng.play().catch(e=>{});
                     document.getElementById('main-illust').src = "images/gemini_damage_weak_comic.png";
-                    document.getElementById('game-container').classList.add('shake');
-                    setTimeout(() => document.getElementById('game-container').classList.remove('shake'), 500);
+                    document.getElementById('game-container').classList.add('shake-screen');
+                    setTimeout(() => document.getElementById('game-container').classList.remove('shake-screen'), 300);
                 }
                 updateUI(); checkBattle();
             };
@@ -260,41 +272,58 @@
         startTimer();
     }
 
+    function checkComboBonus() {
+        if(maxStreakThisTurn >= 4) {
+            let bonus = maxStreakThisTurn * 500;
+            score += bonus;
+            const b = document.getElementById('bonus-pop-up');
+            b.innerText = "MAX COMBO BONUS!\n+" + bonus + "pts";
+            b.style.display = "block";
+            setTimeout(() => { b.style.display = "none"; }, 1500);
+        }
+    }
+
     function startTimer() {
         clearInterval(timerId);
         let time = 100, lastTick = 100;
         timerId = setInterval(() => {
-            time -= 0.9; document.getElementById('timer-bar').style.width = time + "%";
+            time -= 1.0; document.getElementById('timer-bar').style.width = time + "%";
             if (Math.floor(time) < lastTick) { try{ sounds.tick.currentTime=0; sounds.tick.play(); }catch(e){} lastTick = Math.floor(time); }
-            if(time <= 0) { clearInterval(timerId); streak = 0; hp -= 20; updateUI(); loadQuiz(); }
+            if(time <= 0) { checkComboBonus(); streak = 0; maxStreakThisTurn = 0; hp -= 20; updateUI(); loadQuiz(); }
         }, 100);
     }
 
     function updateUI() {
-        // プレイヤーHP
         const pFill = document.getElementById('player-hp-fill');
-        pFill.style.width = hp + "%";
-        if (hp > 60) pFill.style.backgroundColor = "#7dc065";
-        else if (hp > 30) pFill.style.backgroundColor = "#ffda44";
-        else pFill.style.backgroundColor = "#f47b7b";
-
-        // 敵HP
+        if (pFill) {
+            pFill.style.width = hp + "%";
+            pFill.style.backgroundColor = hp > 60 ? "#7dc065" : (hp > 30 ? "#ffda44" : "#f47b7b");
+        }
         const eFill = document.getElementById('enemy-hp-fill');
-        const dEhp = Math.max(0, eHp);
-        eFill.style.width = dEhp + "%";
-        // ★ここを厳密に。25%になれば確実に赤色なのだ！
-        if (dEhp > 60) eFill.style.backgroundColor = "#7dc065";
-        else if (dEhp > 30) eFill.style.backgroundColor = "#ffda44";
-        else eFill.style.backgroundColor = "#f47b7b";
-
+        if (eFill) {
+            eFill.style.width = Math.max(0, eHp) + "%";
+            eFill.style.backgroundColor = eHp > 60 ? "#7dc065" : (eHp > 30 ? "#ffda44" : "#f47b7b");
+        }
         document.getElementById('score-val').innerText = score;
         document.getElementById('mochi-val').innerText = mochi;
+        document.getElementById('correct-count').innerText = totalCorrect;
+
+        const aura = document.getElementById('combo-aura');
+        if (streak >= 4) {
+            aura.style.opacity = "1";
+            aura.style.animation = "aura-flicker " + (0.5 - Math.min(streak * 0.05, 0.4)) + "s infinite alternate";
+            document.getElementById('game-container').style.backgroundColor = "#fff4e6";
+        } else {
+            aura.style.opacity = "0"; aura.style.animation = "none";
+            document.getElementById('game-container').style.backgroundColor = "#fff";
+        }
     }
 
     function checkBattle() {
         if(hp <= 0) { setTimeout(endGame, 1000); }
         else if(eHp <= 0) { 
             sounds.defeat.play().catch(e=>{});
+            checkComboBonus();
             let hb = hp * 10, mb = mochi * 200, tb = 500 + hb + mb;
             score += tb; defCount++; eHp = 100; 
             alert("撃破！\nHPボーナス: " + hb + "\nもちボーナス: " + mb + "\n計 " + tb + "点獲得！"); 
@@ -302,24 +331,52 @@
         } else { setTimeout(loadQuiz, 1300); }
     }
 
-    function useItem() { if(mochi > 0 && hp < 100) { mochi--; hp = Math.min(hp + 50, 100); sounds.heal.play().catch(e=>{}); updateUI(); } }
-    function showCombo() { const p = document.getElementById('combo-pop'); p.innerText = streak + " COMBO!"; p.style.opacity = "1"; setTimeout(() => p.style.opacity = "0", 800); }
+    function showComboPop() { 
+        const p = document.getElementById('combo-pop'); 
+        p.innerText = streak + " COMBO!"; p.style.opacity = "1"; 
+        if(streak >= 4) p.classList.add('max-combo-active'); else p.classList.remove('max-combo-active');
+        setTimeout(() => p.style.opacity = "0", 800); 
+    }
 
+    // ▼▼▼ 音声修正ポイント ▼▼▼
     function endGame() {
-        sounds.bgm.pause(); sounds.result.play().catch(e=>{});
+        clearInterval(timerId); sounds.bgm.pause(); 
+        sounds.result.currentTime = 0; sounds.result.play().catch(e=>{});
+        // 結果発表時にボイスを再生
+        setTimeout(() => { sounds.vPromo.currentTime = 0; sounds.vPromo.play().catch(e=>{}); }, 500);
         document.getElementById('final-score').innerText = score;
+        saveRanking('rank-body');
+        document.getElementById('result-screen').style.display = 'flex';
+    }
+
+    // ▼▼▼ 音声修正ポイント ▼▼▼
+    function showAllClearScreen() {
+        clearInterval(timerId); sounds.bgm.pause(); 
+        sounds.result.currentTime = 0; sounds.result.play().catch(e=>{});
+        // オールクリア時に一番盛り上がるボイスを再生
+        setTimeout(() => { sounds.vCombo4.currentTime = 0; sounds.vCombo4.play().catch(e=>{}); }, 500);
+        document.getElementById('clear-score').innerText = score;
+        saveRanking('clear-rank-body');
+        document.getElementById('all-clear-screen').style.display = 'flex';
+    }
+
+    function saveRanking(targetId) {
         let ranks = JSON.parse(localStorage.getItem('zunda_rankings')) || [];
         if (ranks.length < 3 || score > (ranks[ranks.length-1]?.score || 0)) {
+            // ▼▼▼ 音声修正ポイント ▼▼▼
+            // ランクイン時にファンファーレ音を再生
+            sounds.comboSE.currentTime = 0; sounds.comboSE.play().catch(e=>{});
             let n = prompt("ランクイン！お名前は？", "ずんだ名無し");
             if (n) { ranks.push({name: n, score: score}); ranks.sort((a,b) => b.score - a.score); ranks = ranks.slice(0, 3); localStorage.setItem('zunda_rankings', JSON.stringify(ranks)); }
         }
-        document.getElementById('rank-body').innerHTML = ranks.map((r,i) => "<tr><td>"+(i+1)+"</td><td>"+r.name+"</td><td>"+r.score+"</td></tr>").join('');
-        document.getElementById('result-screen').style.display = 'flex';
-        setTimeout(() => { try{ sounds.vPromo.play(); }catch(e){} }, 2500);
+        document.getElementById(targetId).innerHTML = ranks.map((r,i) => "<tr><td>"+(i+1)+"</td><td>"+r.name+"</td><td>"+r.score+"</td></tr>").join('');
     }
 
-    document.getElementById('btn-start').onclick = startGame;
-    document.getElementById('btn-item').onclick = useItem;
+    document.getElementById('btn-start-game').onclick = startGame;
+    document.getElementById('btn-mochi').onclick = function() {
+        if(mochi > 0 && hp < 100) { mochi--; hp = Math.min(hp + 50, 100); sounds.heal.play().catch(e=>{}); updateUI(); }
+    };
+    document.getElementById('loading-msg').innerText = "準備完了なのだ！";
 </script>
 </body>
 </html>
