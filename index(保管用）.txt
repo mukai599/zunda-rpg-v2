@@ -1,0 +1,326 @@
+
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+    <title>ずんだ豆知識RPG - 百問耐久編なのだ</title>
+    <style>
+        body { background-color: #f0f0f0; margin: 0; display: flex; justify-content: center; height: 100vh; overflow: hidden; font-family: sans-serif; }
+        #game-container { width: 100%; max-width: 480px; height: 100%; background: #fff; border: 12px solid #7dc065; box-sizing: border-box; display: flex; flex-direction: column; position: relative; }
+        #top-battle-area { background-color: #bce6f9; flex: 1.2; padding: 20px 15px 10px 15px; display: flex; flex-direction: column; align-items: center; position: relative; gap: 10px; }
+        .status-pill { background: #fff; border: 3px solid #000; border-radius: 40px; padding: 5px 15px; display: flex; align-items: center; gap: 10px; box-shadow: 0 4px 0 rgba(0,0,0,0.1); width: 85%; max-width: 350px; }
+        .hp-bg { flex: 1; height: 14px; background: #eee; border-radius: 7px; border: 2px solid #999; overflow: hidden; }
+        .hp-fill { height: 100%; width: 100%; transition: width 0.3s, background-color 0.3s; background: #7dc065; }
+        #main-action-view { flex: 1; display: flex; justify-content: center; align-items: center; padding: 10px; position: relative; width: 100%; }
+        #main-illust { width: 100%; max-height: 200px; object-fit: contain; border: 3px solid #333; background: #fff; border-radius: 10px; }
+        #combo-pop { position: absolute; top: 20%; left: 50%; transform: translateX(-50%); color: #ff9800; font-size: 40px; font-weight: bold; text-shadow: 3px 3px 0 #fff; opacity: 0; z-index: 100; transition: 0.3s; pointer-events: none; }
+        #bottom-ui-area { flex: 1; background: #fff; border-top: 8px solid #7dc065; padding: 15px 20px; }
+        #timer-bg { width: 100%; height: 18px; background: #eee; border: 3px solid #333; border-radius: 10px; overflow: hidden; margin-bottom: 10px; }
+        #timer-bar { height: 100%; width: 100%; background: #f47b7b; }
+        #question-box { background: #333; color: #fff; border-radius: 15px; padding: 15px; text-align: center; font-size: 16px; font-weight: bold; min-height: 70px; display: flex; align-items: center; justify-content: center; margin-bottom: 10px; line-height: 1.4; }
+        .choice-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+        .choice-btn { background: #fff; border: 3px solid #7dc065; border-radius: 12px; padding: 12px; font-weight: bold; font-size: 14px; cursor: pointer; box-shadow: 0 4px 0 #5a9e43; }
+        .full-overlay { position: absolute; top:0; left:0; width:100%; height:100%; background:rgba(255,255,255,0.98); z-index:2000; display:flex; flex-direction:column; justify-content:center; align-items:center; text-align:center; padding:20px; box-sizing:border-box; overflow-y: auto; }
+        .big-btn { padding: 15px 40px; font-size: 20px; font-weight: bold; background: #7dc065; color: white; border: none; border-radius: 40px; cursor: pointer; box-shadow: 0 6px 0 #5a9e43; }
+        #promo-box { border: 6px solid #f47b7b; border-radius: 15px; padding: 10px; background: #fff; margin: 10px 0; width: 100%; }
+        .rank-table { width: 100%; border-collapse: collapse; font-size: 14px; }
+        .rank-table th { background: #7dc065; color: white; padding: 5px; }
+        .rank-table td { border-bottom: 1px solid #ddd; padding: 5px; font-weight: bold; }
+        .shake { animation: shake 0.5s; }
+        @keyframes shake { 0%{transform:translate(2px,2px)} 25%{transform:translate(-3px,-2px)} 50%{transform:translate(3px,2px)} 100%{transform:translate(0,0)} }
+    </style>
+</head>
+<body>
+
+<div id="game-container">
+    <div id="start-screen" class="full-overlay">
+        <img src="images/game_title.png" style="width:90%; margin-bottom:20px; border:4px solid #7dc065; border-radius:15px;">
+        <button id="btn-start" class="big-btn">冒険開始なのだ！</button>
+        <p style="font-size:14px; color:#7dc065; font-weight:bold; margin-top:15px;">敵のピンチもしっかり見えるのだ！</p>
+    </div>
+
+    <div id="result-screen" class="full-overlay" style="display:none;">
+        <h2 style="margin:0;">結果発表なのだ！</h2>
+        <div style="font-size:40px; font-weight:bold; color:#ff9800; margin:5px 0;"><span id="final-score">0</span>点</div>
+        <div id="promo-box">
+            <p style="color:#f47b7b; font-weight:bold; margin:0 0 5px 0;">もっとずんだもんしゃべるのだ！</p>
+            <a href="https://line.me/S/sticker/32533905" target="_blank">
+                <img src="images/IMG_0294.PNG" style="width:100px; border-radius:5px;">
+                <div style="background:#7dc065; color:white; padding:8px; border-radius:10px; margin-top:8px; font-weight:bold; font-size:14px;">スタンプを見るのだ！</div>
+            </a>
+        </div>
+        <table class="rank-table"><thead><tr><th>位</th><th>名</th><th>点</th></tr></thead><tbody id="rank-body"></tbody></table>
+        <button class="big-btn" onclick="location.reload()" style="background:#ffda44; color:#333; margin-top:15px;">もう一度遊ぶ</button>
+    </div>
+
+    <div id="top-battle-area">
+        <div class="status-pill" style="align-self: flex-start;">
+            <img id="enemy-thumb" src="images/enemy_weak.png" style="width:35px; height:35px; object-fit:contain;">
+            <div class="hp-bg"><div id="enemy-hp-fill" class="hp-fill"></div></div>
+        </div>
+        <div id="main-action-view"><div id="combo-pop">0 COMBO!</div><img id="main-illust" src="images/gemini_zunda_think.png"></div>
+        <div class="status-pill" style="align-self: flex-end;">
+            <div class="hp-bg"><div id="player-hp-fill" class="hp-fill"></div></div>
+            <img src="images/gemini_zunda_think.png" style="width:35px; height:35px; border-radius:50%; border:2px solid #7dc065;">
+        </div>
+    </div>
+
+    <div id="bottom-ui-area">
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px;">
+            <div id="btn-item" style="border:3px solid #7dc065; padding:4px 10px; border-radius:10px; cursor:pointer; background:#fff;">🍡 x<span id="mochi-val">3</span></div>
+            <div id="timer-bg" style="flex:1; margin:0 10px;"><div id="timer-bar"></div></div>
+            <div style="font-weight:bold; color:#ff9800;">SCORE: <span id="score-val">0</span></div>
+        </div>
+        <div id="question-box"></div><div id="choices" class="choice-grid"></div>
+    </div>
+</div>
+
+<script>
+    const sounds = {
+        bgm: new Audio('sounds/bgm_thinking.mp3'),
+        result: new Audio('sounds/bgm_result.mp3'),
+        ok: new Audio('sounds/se_correct.mp3'),
+        ng: new Audio('sounds/se_damage.mp3'),
+        tick: new Audio('sounds/se_tick.mp3'),
+        heal: new Audio('sounds/se_heal.mp3'),
+        defeat: new Audio('sounds/se_defeat.mp3'),
+        comboSE: new Audio('sounds/se_combo.mp3'),
+        vCombo1: new Audio('sounds/voice_combo1.mp3'),
+        vCombo2: new Audio('sounds/voice_combo2.mp3'),
+        vCombo3: new Audio('sounds/voice_combo3.mp3'),
+        vCombo4: new Audio('sounds/voice_combo4.mp3'),
+        vPromo: new Audio('sounds/voice_promo.mp3')
+    };
+
+    const masterQuizData = {
+        weak: [
+            {q:"パンダの尻尾の色は何色？", c:["黒","白","しま"], a:1},
+            {q:"イチゴの表面にある粒の正体は？", c:["種","果実","茎"], a:1},
+            {q:"バナナは「木」ではなく何の仲間？", c:["草","ヤシ","サボテン"], a:0},
+            {q:"タコの心臓はいくつある？", c:["1つ","2つ","3つ"], a:2},
+            {q:"キリンの角は何本ある？", c:["2本","3本","5本"], a:2},
+            {q:"シマウマの地肌の色は何色？", c:["白","黒","ピンク"], a:1},
+            {q:"セミが鳴くのはどっち？", c:["オス","メス","両方"], a:0},
+            {q:"コアラが1日に寝る時間は？", c:["12h","18h","22h"], a:2},
+            {q:"ラッコが寝る時に流されない工夫は？", c:["岩をつかむ","海藻を巻く","手を繋ぐ"], a:1},
+            {q:"世界で一番速い鳥はどれ？", c:["ハヤブサ","ダチョウ","ツバメ"], a:0},
+            {q:"ペンギンの膝は、実はどうなっている？", c:["ない","曲がっている","まっすぐ"], a:1},
+            {q:"カラスは色を識別できる？", c:["できない","少し","人間より見える"], a:2},
+            {q:"ブロッコリーで一番栄養がある部分は？", c:["茎","つぼみ","葉"], a:0},
+            {q:"猫の耳を動かす筋肉は人間の何倍？", c:["3倍","10倍","30倍"], a:2},
+            {q:"アリの平均的な寿命はどれくらい？", c:["数週間","1～2年","10年以上"], a:1},
+            {q:"カタツムリには歯がある？", c:["ない","100本くらい","1万本以上"], a:2},
+            {q:"サメの骨は何でできている？", c:["カルシウム","軟骨","鉄"], a:1},
+            {q:"ラフレシアの花の匂いは？", c:["甘い","無臭","腐った肉"], a:2},
+            {q:"ヒマワリは太陽をずっと追いかける？", c:["若い時だけ","ずっと","追わない"], a:0},
+            {q:"ワニの性別は何で決まる？", c:["遺伝","卵の時の温度","運"], a:1},
+            {q:"カンガルーの赤ちゃん、生まれた大きさは？", c:["約2cm","約10cm","約30cm"], a:0},
+            {q:"カメレオンの色が変わる主な理由は？", c:["隠れるため","感情・温度","擬態"], a:1},
+            {q:"フクロウの首は何度まで回る？", c:["180度","270度","360度"], a:1},
+            {q:"ライオンの狩りをするのは主にどっち？", c:["オス","メス","子供"], a:1},
+            {q:"象がジャンプできない唯一の哺乳類？", c:["本当","嘘","種類による"], a:0},
+            {q:"ホッキョクグマの地肌の色は何色？", c:["白","ピンク","黒"], a:2},
+            {q:"リスはどんぐりを埋めた場所を覚えている？", c:["全部","半分","ほとんど忘れる"], a:2},
+            {q:"ウサギの耳が長い最大の理由は？", c:["集音","放熱","可愛いから"], a:1},
+            {q:"日本で一番高い山はどれ？", c:["富士山","北岳","阿蘇山"], a:0},
+            {q:"蚊の主食は本来何？", c:["血","花の蜜","水"], a:1},
+            {q:"カバの汗の色は何色に見える？", c:["透明","青","ピンク"], a:2},
+            {q:"世界一足が速い陸上動物は？", c:["ライオン","チーター","ガゼル"], a:1},
+            {q:"トウモロコシのひげの数は何と同じ？", c:["葉の数","根の数","粒の数"], a:2},
+            {q:"リンゴを水に浮かべるとどうなる？", c:["沈む","浮く","回転する"], a:1}
+        ],
+        mid: [
+            {q:"ダイヤモンドの成分は、実は何と同じ？", c:["鉄","炭素","石灰"], a:1},
+            {q:"宇宙空間で泣くと、涙はどうなる？", c:["落ちる","蒸発","目に留まる"], a:2},
+            {q:"日本の1円玉の直径は何cm？", c:["1cm","2cm","3cm"], a:1},
+            {q:"火星が赤く見える理由は？", c:["火が多い","錆びた鉄","暑い"], a:1},
+            {q:"地球の自転、1時間は何度？", c:["10度","15度","24度"], a:1},
+            {q:"世界一面積が広い国はどこ？", c:["カナダ","アメリカ","ロシア"], a:2},
+            {q:"マチュピチュ遺跡がある国はどこ？", c:["ペルー","チリ","メキシコ"], a:0},
+            {q:"人体で一番硬い部分はどこ？", c:["頭の骨","歯のエナメル質","太もも"], a:1},
+            {q:"雲は何でできている？", c:["煙","水や氷の粒","空気"], a:1},
+            {q:"フランスの首都はどこ？", c:["ベルリン","ロンドン","パリ"], a:2},
+            {q:"月まで光が届く時間は約何秒？", c:["1.3秒","8秒","60秒"], a:0},
+            {q:"骨の数は、赤ちゃんの方が大人より多い？", c:["本当","嘘","同じ"], a:0},
+            {q:"世界で一番長い川はどれ？", c:["アマゾン","ナイル","ミシシッピ"], a:1},
+            {q:"金（ゴールド）は錆びる？", c:["錆びる","錆びない","条件による"], a:1},
+            {q:"オリンピック五輪の左端の色は？", c:["青","黄色","赤"], a:0},
+            {q:"日本で一番広い湖はどれ？", c:["霞ヶ浦","琵琶湖","サロマ湖"], a:1},
+            {q:"太陽の表面温度は約何度？", c:["1000度","6000度","100万度"], a:1},
+            {q:"ピアノの鍵盤の数は全部でいくつ？", c:["80","88","92"], a:1},
+            {q:"虹の色、一番外側（上）は何色？", c:["紫","赤","黄色"], a:1},
+            {q:"雷の音の速さは1秒間に約何m？", c:["340m","30万km","1km"], a:0},
+            {q:"日本最南端の島はどれ？", c:["沖ノ鳥島","与那国島","竹富島"], a:0},
+            {q:"エッフェル塔がある都市はどこ？", c:["ローマ","パリ","マドリード"], a:1},
+            {q:"トランプの合計(J抜き)を足すと？", c:["364","365","366"], a:1},
+            {q:"人間の心臓は1日に約何回打つ？", c:["1万回","5万回","10万回"], a:2},
+            {q:"日本の1円玉は、アルミ100％？", c:["本当","嘘","条件による"], a:0},
+            {q:"空気中に一番多い気体はどれ？", c:["酸素","二酸化炭素","窒素"], a:2},
+            {q:"ハチミツは腐らない？", c:["本当","嘘","半年で腐る"], a:0},
+            {q:"南極と北極、どっちの方が寒い？", c:["南極","北極","同じ"], a:0},
+            {q:"自由の女神が左手に持っているのは？", c:["聖書","独立宣言書","憲法"], a:1},
+            {q:"アインシュタインが受賞した賞は？", c:["物理学賞","化学賞","平和賞"], a:0},
+            {q:"血液型、世界で一番多いのは？", c:["A型","B型","O型"], a:2},
+            {q:"パンは英語？", c:["はい","いいえ","実はポルトガル語"], a:1},
+            {q:"日本の5円玉に穴がある理由は？", c:["節約","紐を通す","偽造防止"], a:0},
+            {q:"1マイルは約何キロメートル？", c:["1km","1.6km","2km"], a:1}
+        ],
+        boss: [
+            {q:"光は1秒間に地球を約何周する？", c:["3周","7周半","10周"], a:1},
+            {q:"将棋で、裏返っても名前が変わらないのは？", c:["飛車","角行","王将"], a:2},
+            {q:"原子番号1番の元素は何？", c:["ヘリウム","水素","リチウム"], a:1},
+            {q:"マリアナ海溝の深さは約何m？", c:["5000m","8000m","1万m以上"], a:2},
+            {q:"ニュートンが引力に気づいた果物は？", c:["桃","オレンジ","リンゴ"], a:2},
+            {q:"日本の初代内閣総理大臣は？", c:["伊藤博文","福沢諭吉","織田信長"], a:0},
+            {q:"モナ・リザを描いたのは誰？", c:["ピカソ","ダ・ヴィンチ","ゴッホ"], a:1},
+            {q:"1兆の1000倍を何と呼ぶ？", c:["垓","京","穣"], a:1},
+            {q:"ナポレオンが最後に流された島は？", c:["エルバ","セントヘレナ","コルシカ"], a:1},
+            {q:"太陽系で一番大きい惑星は？", c:["土星","天王星","木星"], a:2},
+            {q:"ピラミッドが作られた主な目的は？", c:["天文台","お墓","穀物庫"], a:1},
+            {q:"第九を書いた作曲家は誰？", c:["ベートーヴェン","モーツァルト","バッハ"], a:0},
+            {q:"月の周期は約何日？", c:["28日","29.5日","31日"], a:1},
+            {q:"南極にある日本の観測基地といえば？", c:["昭和基地","平成基地","大和基地"], a:0},
+            {q:"ハワイはアメリカの何番目の州？", c:["48","49","50"], a:2},
+            {q:"オーロラが発生するのはどの層？", c:["対流圏","成層圏","熱圏"], a:2},
+            {q:"人間のDNA、チンパンジーと何％同じ？", c:["80％","90％","98％以上"], a:2},
+            {q:"宇宙の始まりとされる爆発は？", c:["ビッグバン","ノヴァ","ブラックホール"], a:0},
+            {q:"面積が世界一小さい国は？", c:["モナコ","バチカン","ナウル"], a:1},
+            {q:"ノーベルが発明したのは？", c:["電球","電話","ダイナマイト"], a:2},
+            {q:"土俵の直径は何メートル？", c:["4m24cm","4m55cm","5m"], a:1},
+            {q:"ブルジュ・ハリファがある都市は？", c:["ドバイ","上海","ニューヨーク"], a:0},
+            {q:"光が1年間に進む距離を何という？", c:["1マイル","1光年","1パーセク"], a:1},
+            {q:"イタリアの通貨、ユーロの前は？", c:["フラン","リラ","マルク"], a:1},
+            {q:"アポロ11号が月面着陸に成功したのは？", c:["1964","1969","1972"], a:1},
+            {q:"将棋盤のマス目は全部でいくつ？", c:["64","81","100"], a:1},
+            {q:"東京タワーの高さは何メートル？", c:["300m","333m","634m"], a:1},
+            {q:"世界一長いとされる小説はどれ？", c:["戦争と平和","失われた時を求めて","源氏"], a:1},
+            {q:"野球のダイヤモンド1辺は約何m？", c:["25m","27.4m","30m"], a:1},
+            {q:"地球から一番近い恒星(太陽以外)は？", c:["シリウス","プロキシマ","ベガ"], a:1},
+            {q:"日本初の鉄道が走ったのはどこ間？", c:["新橋～横浜","上野～浅草","東京～大阪"], a:0},
+            {q:"一円玉は何グラム？", c:["1g","2g","5g"], a:0}
+        ]
+    };
+
+    let currentQuizPool = JSON.parse(JSON.stringify(masterQuizData));
+    let hp = 100, eHp = 100, score = 0, mochi = 3, streak = 0, defCount = 0, timerId = null;
+
+    function startGame() {
+        Object.values(sounds).forEach(s => { try{ s.play(); s.pause(); s.currentTime=0; }catch(e){} });
+        sounds.vPromo.volume = 1.0; sounds.tick.volume = 1.0; sounds.comboSE.volume = 1.0; sounds.bgm.volume = 0.1; sounds.bgm.loop = true;
+        document.getElementById('start-screen').style.display = 'none';
+        sounds.bgm.play().catch(e => {});
+        updateUI(); loadQuiz();
+    }
+
+    function loadQuiz() {
+        if(hp <= 0) return;
+        let type = (defCount >= 10) ? "boss" : (defCount >= 4) ? "mid" : "weak";
+        let pool = currentQuizPool[type];
+        if (pool.length === 0) pool = JSON.parse(JSON.stringify(masterQuizData[type]));
+        let qIdx = Math.floor(Math.random() * pool.length);
+        let q = pool.splice(qIdx, 1)[0];
+        
+        document.getElementById('enemy-thumb').src = "images/enemy_" + type + ".png";
+        document.getElementById('main-illust').src = "images/gemini_zunda_think.png";
+        document.getElementById('question-box').innerText = q.q;
+        const container = document.getElementById('choices');
+        container.innerHTML = "";
+        q.c.forEach((choice, i) => {
+            const btn = document.createElement('button');
+            btn.className = "choice-btn"; btn.innerText = choice;
+            btn.onclick = () => {
+                clearInterval(timerId);
+                if(i === q.a) {
+                    streak++; score += (100 + (streak > 1 ? streak * 25 : 0));
+                    
+                    // ★ダメージを25に調整！これで100→75→50→25→0となるのだ
+                    eHp -= 25; 
+
+                    if (eHp > 0) {
+                        sounds.ok.play().catch(e=>{});
+                        setTimeout(() => {
+                            if (streak > 1) { sounds.comboSE.currentTime = 0; sounds.comboSE.play().catch(e=>{}); }
+                            let voice = sounds["vCombo" + Math.min(streak, 4)];
+                            if (voice) { voice.currentTime = 0; voice.play().catch(e=>{}); }
+                        }, 400);
+                        if(streak > 1) showCombo();
+                    }
+                    document.getElementById('main-illust').src = "images/gemini_attack_weak.png";
+                } else {
+                    streak = 0; hp -= 20; 
+                    sounds.ng.play().catch(e=>{});
+                    document.getElementById('main-illust').src = "images/gemini_damage_weak_comic.png";
+                    document.getElementById('game-container').classList.add('shake');
+                    setTimeout(() => document.getElementById('game-container').classList.remove('shake'), 500);
+                }
+                updateUI(); checkBattle();
+            };
+            container.appendChild(btn);
+        });
+        startTimer();
+    }
+
+    function startTimer() {
+        clearInterval(timerId);
+        let time = 100, lastTick = 100;
+        timerId = setInterval(() => {
+            time -= 0.9; document.getElementById('timer-bar').style.width = time + "%";
+            if (Math.floor(time) < lastTick) { try{ sounds.tick.currentTime=0; sounds.tick.play(); }catch(e){} lastTick = Math.floor(time); }
+            if(time <= 0) { clearInterval(timerId); streak = 0; hp -= 20; updateUI(); loadQuiz(); }
+        }, 100);
+    }
+
+    function updateUI() {
+        // プレイヤーHP
+        const pFill = document.getElementById('player-hp-fill');
+        pFill.style.width = hp + "%";
+        if (hp > 60) pFill.style.backgroundColor = "#7dc065";
+        else if (hp > 30) pFill.style.backgroundColor = "#ffda44";
+        else pFill.style.backgroundColor = "#f47b7b";
+
+        // 敵HP
+        const eFill = document.getElementById('enemy-hp-fill');
+        const dEhp = Math.max(0, eHp);
+        eFill.style.width = dEhp + "%";
+        // ★ここを厳密に。25%になれば確実に赤色なのだ！
+        if (dEhp > 60) eFill.style.backgroundColor = "#7dc065";
+        else if (dEhp > 30) eFill.style.backgroundColor = "#ffda44";
+        else eFill.style.backgroundColor = "#f47b7b";
+
+        document.getElementById('score-val').innerText = score;
+        document.getElementById('mochi-val').innerText = mochi;
+    }
+
+    function checkBattle() {
+        if(hp <= 0) { setTimeout(endGame, 1000); }
+        else if(eHp <= 0) { 
+            sounds.defeat.play().catch(e=>{});
+            let hb = hp * 10, mb = mochi * 200, tb = 500 + hb + mb;
+            score += tb; defCount++; eHp = 100; 
+            alert("撃破！\nHPボーナス: " + hb + "\nもちボーナス: " + mb + "\n計 " + tb + "点獲得！"); 
+            updateUI(); loadQuiz(); 
+        } else { setTimeout(loadQuiz, 1300); }
+    }
+
+    function useItem() { if(mochi > 0 && hp < 100) { mochi--; hp = Math.min(hp + 50, 100); sounds.heal.play().catch(e=>{}); updateUI(); } }
+    function showCombo() { const p = document.getElementById('combo-pop'); p.innerText = streak + " COMBO!"; p.style.opacity = "1"; setTimeout(() => p.style.opacity = "0", 800); }
+
+    function endGame() {
+        sounds.bgm.pause(); sounds.result.play().catch(e=>{});
+        document.getElementById('final-score').innerText = score;
+        let ranks = JSON.parse(localStorage.getItem('zunda_rankings')) || [];
+        if (ranks.length < 3 || score > (ranks[ranks.length-1]?.score || 0)) {
+            let n = prompt("ランクイン！お名前は？", "ずんだ名無し");
+            if (n) { ranks.push({name: n, score: score}); ranks.sort((a,b) => b.score - a.score); ranks = ranks.slice(0, 3); localStorage.setItem('zunda_rankings', JSON.stringify(ranks)); }
+        }
+        document.getElementById('rank-body').innerHTML = ranks.map((r,i) => "<tr><td>"+(i+1)+"</td><td>"+r.name+"</td><td>"+r.score+"</td></tr>").join('');
+        document.getElementById('result-screen').style.display = 'flex';
+        setTimeout(() => { try{ sounds.vPromo.play(); }catch(e){} }, 2500);
+    }
+
+    document.getElementById('btn-start').onclick = startGame;
+    document.getElementById('btn-item').onclick = useItem;
+</script>
+</body>
+</html>
