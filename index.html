@@ -105,6 +105,12 @@
         @keyframes pulse-anim { from { transform: translateX(-50%) scale(1); } to { transform: translateX(-50%) scale(1.1); } }
         .shake-screen { animation: shake 0.3s; }
         @keyframes shake { 0%,100%{transform:translate(0,0)} 25%{transform:translate(4px,4px)} 75%{transform:translate(-4px,-4px)} }
+
+        #enemy-thumb { transform-origin: center; }
+        .enemy-hit-anim { animation: enemy-hit 0.3s; }
+        @keyframes enemy-hit { 0%,100%{transform:translate(0,0) scale(1);} 20%{transform:translate(-6px,2px) scale(0.95);} 40%{transform:translate(6px,-2px) scale(1.05);} 60%{transform:translate(-4px,1px);} 80%{transform:translate(3px,-1px);} }
+        .enemy-defeat-anim { animation: enemy-defeat 0.7s forwards; }
+        @keyframes enemy-defeat { 0%{transform:scale(1) rotate(0deg); opacity:1;} 40%{transform:scale(1.2) rotate(-10deg); opacity:1;} 100%{transform:scale(0.1) rotate(35deg) translateY(40px); opacity:0;} }
     </style>
 </head>
 <body>
@@ -246,9 +252,16 @@
                     streak++; totalCorrect++;
                     if(streak > maxStreakThisTurn) maxStreakThisTurn = streak;
                     score += (100 + (streak > 1 ? streak * 25 : 0));
-                    eHp -= 25; 
+                    eHp -= 25;
                     if (eHp > 0) {
                         sounds.ok.play().catch(e=>{});
+                        const eThumb = document.getElementById('enemy-thumb');
+                        eThumb.src = "images/enemy_" + type + "_damage.png";
+                        eThumb.classList.add('enemy-hit-anim');
+                        setTimeout(() => {
+                            eThumb.classList.remove('enemy-hit-anim');
+                            eThumb.src = "images/enemy_" + type + ".png";
+                        }, 300);
                         setTimeout(() => {
                             if (streak > 1) { sounds.comboSE.currentTime = 0; sounds.comboSE.play().catch(e=>{}); }
                             let voice = sounds["vCombo" + Math.min(streak, 4)];
@@ -321,13 +334,23 @@
 
     function checkBattle() {
         if(hp <= 0) { setTimeout(endGame, 1000); }
-        else if(eHp <= 0) { 
+        else if(eHp <= 0) {
             sounds.defeat.play().catch(e=>{});
             checkComboBonus();
             let hb = hp * 10, mb = mochi * 200, tb = 500 + hb + mb;
-            score += tb; defCount++; eHp = 100; 
-            alert("撃破！\nHPボーナス: " + hb + "\nもちボーナス: " + mb + "\n計 " + tb + "点獲得！"); 
-            updateUI(); loadQuiz(); 
+            score += tb; defCount++;
+            const eThumb = document.getElementById('enemy-thumb');
+            eThumb.classList.add('enemy-defeat-anim');
+            updateUI();
+            const b = document.getElementById('bonus-pop-up');
+            b.innerText = "撃破！\nHPボーナス:+" + hb + "\nもちボーナス:+" + mb + "\n計+" + tb + "点！";
+            b.style.display = "block";
+            setTimeout(() => {
+                b.style.display = "none";
+                eThumb.classList.remove('enemy-defeat-anim');
+                eHp = 100;
+                updateUI(); loadQuiz();
+            }, 1200);
         } else { setTimeout(loadQuiz, 1300); }
     }
 
