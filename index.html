@@ -5,118 +5,152 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
     <title>ずんだ豆知識RPG - 百問耐久・覚醒編</title>
     <style>
-        body { background-color: #f0f0f0; margin: 0; display: flex; justify-content: center; height: 100vh; overflow: hidden; font-family: sans-serif; }
-        
-        #game-container { 
-            width: 100%; max-width: 480px; height: 100vh; background: #fff; 
-            border: 8px solid #7dc065; box-sizing: border-box; 
+        :root {
+            --accent: #5cb584;
+            --accent-dark: #3f9c67;
+            --bg-top: #eef6f2;
+            --bg-bottom: #e4f0fb;
+            --card: #ffffff;
+            --ink: #26322c;
+            --sub-ink: #7c8b82;
+            --danger: #ef6a6a;
+            --gold: #ffb33d;
+        }
+        * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+        body {
+            background: linear-gradient(160deg, var(--bg-top), var(--bg-bottom));
+            margin: 0; display: flex; justify-content: center;
+            height: 100dvh; overflow: hidden;
+            font-family: "Hiragino Sans", "Yu Gothic", -apple-system, sans-serif;
+            color: var(--ink);
+        }
+
+        #game-container {
+            width: 100%; max-width: 460px; height: 100dvh; background: var(--card);
+            box-sizing: border-box;
             display: flex; flex-direction: column; position: relative; overflow: hidden;
+            padding-top: env(safe-area-inset-top); padding-bottom: env(safe-area-inset-bottom);
+            transition: background-color 0.4s;
         }
-        
-        /* バトルエリア：PCでもはみ出さないよう高さを調整 */
-        #top-battle-area { 
-            background-color: #bce6f9; height: 45%; min-height: 280px;
-            padding: 10px 15px; display: flex; flex-direction: column; 
-            align-items: center; position: relative; gap: 5px; overflow: hidden; 
-        }
-        
-        #combo-aura { position: absolute; top:0; left:0; width:100%; height:100%; pointer-events: none; opacity: 0; transition: 0.5s; background: radial-gradient(circle, rgba(255,165,0,0.5) 0%, rgba(255,69,0,0) 70%); z-index: 1; }
 
-        .status-pill { background: #fff; border: 3px solid #000; border-radius: 40px; padding: 4px 12px; display: flex; align-items: center; gap: 8px; box-shadow: 0 4px 0 rgba(0,0,0,0.1); width: 85%; max-width: 350px; z-index: 10; }
-        .hp-bg { flex: 1; height: 12px; background: #eee; border-radius: 6px; border: 2px solid #999; overflow: hidden; }
-        .hp-fill { height: 100%; width: 100%; transition: width 0.3s, background-color 0.3s; background: #7dc065; }
-
-        #main-action-view { flex: 1; display: flex; justify-content: center; align-items: center; width: 100%; z-index: 5; overflow: hidden; }
-        #main-illust { max-width: 100%; max-height: 160px; object-fit: contain; border: 3px solid #333; background: #fff; border-radius: 10px; }
-        
-        #combo-pop { position: absolute; top: 15%; left: 50%; transform: translateX(-50%); color: #ff9800; font-size: 36px; font-weight: bold; text-shadow: 2px 2px 0 #fff; opacity: 0; z-index: 100; pointer-events: none; }
-        .max-combo-active { color: #ff3d00 !important; font-size: 50px !important; animation: pulse-anim 0.5s infinite alternate; }
-
-        /* UIエリア：ここが押し出されないように高さを確保 */
-        #bottom-ui-area { 
-            flex: 1; background: #fff; border-top: 6px solid #7dc065; 
-            padding: 10px 15px; z-index: 20; display: flex; flex-direction: column;
+        /* ===== バトルエリア ===== */
+        #top-battle-area {
+            background: linear-gradient(165deg, #cfe8fb 0%, #e9f4fc 60%, #fff 100%);
+            flex: 0 0 auto; height: 230px;
+            padding: 18px 16px 14px; display: flex; flex-direction: column;
+            align-items: center; justify-content: flex-start; position: relative; gap: 6px; overflow: hidden;
         }
-        
-        #timer-bg { width: 100%; height: 14px; background: #eee; border: 2px solid #333; border-radius: 7px; overflow: hidden; margin-bottom: 8px; }
-        #timer-bar { height: 100%; width: 100%; background: #f47b7b; }
-        
-        #question-box { 
-            background: #333; color: #fff; border-radius: 12px; padding: 10px; 
-            text-align: center; font-size: 15px; font-weight: bold; 
-            min-height: 60px; display: flex; align-items: center; justify-content: center; 
-            margin-bottom: 10px; line-height: 1.4;
+
+        #combo-aura { position: absolute; top:0; left:0; width:100%; height:100%; pointer-events: none; opacity: 0; transition: 0.5s; background: radial-gradient(circle, rgba(255,179,61,0.45) 0%, rgba(255,105,61,0) 70%); z-index: 1; }
+
+        /* 敵ステージ：大きく表示 */
+        #enemy-stage { display:flex; flex-direction:column; align-items:center; gap:4px; z-index:6; }
+        #enemy-name-tag { font-size:12px; font-weight:bold; color:var(--sub-ink); background:rgba(255,255,255,0.8); padding:2px 12px; border-radius:20px; }
+        #enemy-visual-wrap { position:relative; width:118px; height:118px; display:flex; align-items:center; justify-content:center; }
+        #enemy-visual { width:100%; height:100%; transform-origin:center; transition: transform 0.4s ease-out; filter: drop-shadow(0 6px 6px rgba(0,0,0,0.12)); }
+        .enemy-hp-wrap { width:140px; }
+
+        .hp-row { display:flex; align-items:center; gap:6px; width:100%; }
+        .hp-icon { font-size:13px; flex-shrink:0; }
+        .hp-bg { flex:1; height:11px; background:#e4e9e6; border-radius:7px; overflow:hidden; box-shadow: inset 0 1px 2px rgba(0,0,0,0.08); }
+        .hp-fill { height:100%; width:100%; transition: width 0.35s ease, background 0.35s; background: linear-gradient(90deg, var(--accent), var(--accent-dark)); border-radius:7px; }
+
+        /* プレイヤーアバター：右下に浮く丸アイコン */
+        #player-pill {
+            position:absolute; right:14px; bottom:4px; z-index:8;
+            display:flex; align-items:center; gap:6px;
+            background:rgba(255,255,255,0.92); border-radius:30px; padding:4px 10px 4px 4px;
+            box-shadow: 0 3px 8px rgba(0,0,0,0.1);
         }
-        
-        .choice-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; flex: 1; }
-        .choice-btn { background: #fff; border: 3px solid #7dc065; border-radius: 10px; padding: 8px 4px; font-weight: bold; font-size: 13px; cursor: pointer; box-shadow: 0 3px 0 #5a9e43; display: flex; align-items: center; justify-content: center; }
-        
+        #main-illust {
+            width:46px; height:46px; border-radius:50%; object-fit:cover; background:#fff;
+            border:2px solid var(--accent); transition: transform 0.25s ease-out;
+        }
+        .player-hp-mini { width:60px; }
+        .player-hp-mini .hp-bg { height:8px; }
+
+        #combo-pop { position: absolute; top: 10%; left: 50%; transform: translateX(-50%); color: var(--gold); font-size: 32px; font-weight: 900; text-shadow: 2px 2px 0 #fff; opacity: 0; z-index: 100; pointer-events: none; }
+        .max-combo-active { color: #ff3d00 !important; font-size: 44px !important; animation: pulse-anim 0.5s infinite alternate; }
+
+        /* ===== 下部UIエリア ===== */
+        #bottom-ui-area {
+            flex: 1; background: var(--card);
+            padding: 12px 16px 14px; z-index: 20; display: flex; flex-direction: column;
+            border-top: 1px solid rgba(0,0,0,0.05);
+            min-height: 0;
+        }
+
+        .top-row { display:flex; justify-content:space-between; align-items:center; margin-bottom:8px; gap:8px; }
+        .chip { display:flex; align-items:center; gap:4px; background:#f3f6f4; border-radius:20px; padding:5px 10px; font-size:12px; font-weight:bold; }
+        #btn-mochi { cursor:pointer; color:var(--ink); transition: transform 0.15s; }
+        #btn-mochi:active { transform: scale(0.94); }
+        .score-chip { color:var(--accent-dark); background:#eafaf1; }
+
+        #timer-bg { flex:1; height:10px; background:#eef1ef; border-radius:6px; overflow:hidden; margin:0 10px; }
+        #timer-bar { height:100%; width:100%; background: linear-gradient(90deg, var(--gold), var(--danger)); transition: width 0.1s linear; }
+
+        #correct-row { text-align:right; font-size:11px; color:var(--sub-ink); font-weight:bold; margin-bottom:6px; }
+
+        #question-box {
+            background: #fff; color: var(--ink); border-radius: 18px; padding: 20px 16px;
+            text-align: center; font-size: 16.5px; font-weight: bold;
+            min-height: 76px; display: flex; align-items: center; justify-content: center;
+            margin-bottom: 16px; line-height: 1.5;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.06);
+            border: 1px solid #eef1ef;
+        }
+
+        .choice-grid { display: grid; grid-template-columns: 1fr 1fr; grid-auto-rows: min-content; gap: 10px; }
+        .choice-btn {
+            background: #fff; border: 2px solid #e3eae6; border-radius: 16px;
+            padding: 16px 8px; font-weight: bold; font-size: 14.5px; cursor: pointer;
+            box-shadow: 0 2px 0 #e3eae6;
+            display: flex; align-items: center; justify-content: center;
+            transition: transform 0.1s, box-shadow 0.1s, border-color 0.15s;
+            color: var(--ink); min-height: 64px;
+        }
+        .choice-btn:active { transform: translateY(2px) scale(0.98); box-shadow: 0 0 0 transparent; }
+        .choice-btn.correct-flash { background:#eafaf1; border-color: var(--accent); color: var(--accent-dark); }
+        .choice-btn.wrong-flash { background:#fdecec; border-color: var(--danger); color:#c23b3b; }
+
         .full-overlay { position: absolute; top:0; left:0; width:100%; height:100%; background:rgba(255,255,255,0.98); z-index:2000; display:flex; flex-direction:column; justify-content:center; align-items:center; text-align:center; padding:20px; box-sizing:border-box; }
-        .big-btn { padding: 15px 40px; font-size: 20px; font-weight: bold; background: #7dc065; color: white; border: none; border-radius: 40px; cursor: pointer; box-shadow: 0 6px 0 #5a9e43; }
+        .big-btn { padding: 15px 40px; font-size: 18px; font-weight: bold; background: linear-gradient(90deg, var(--accent), var(--accent-dark)); color: white; border: none; border-radius: 40px; cursor: pointer; box-shadow: 0 6px 14px rgba(63,156,103,0.35); }
 
-        #bonus-pop-up { position: absolute; top: 40%; left: 50%; transform: translate(-50%, -50%); color: #ff3d00; font-size: 28px; font-weight: bold; text-shadow: 2px 2px 0 #fff; background: rgba(255,255,255,0.95); padding: 10px; border-radius: 15px; border: 4px solid #ff9800; display: none; z-index: 500; text-align: center; }
+        #bonus-pop-up { position: absolute; top: 40%; left: 50%; transform: translate(-50%, -50%); width: min(88%, 320px); box-sizing: border-box; color: #d9480f; font-size: 18px; font-weight: 900; text-shadow: 1px 1px 0 #fff; background: rgba(255,255,255,0.97); padding: 16px 20px; border-radius: 18px; border: 3px solid var(--gold); display: none; z-index: 500; text-align: center; white-space: pre-line; line-height: 1.5; box-shadow: 0 8px 20px rgba(0,0,0,0.15); }
 
-        /* 宣伝ボックスの新しいデザイン */
         #promo-box {
-            border: 4px solid #f47b7b;
-            border-radius: 20px;
-            padding: 15px;
-            background: linear-gradient(to bottom, #fff, #ffebeb);
-            margin: 15px 0;
-            width: 90%;
-            box-shadow: 0 8px 16px rgba(244, 123, 123, 0.3);
-            text-decoration: none;
-            display: block;
-            color: inherit;
-            transition: transform 0.2s;
+            border: 2px solid #f6c6c6; border-radius: 20px; padding: 15px;
+            background: linear-gradient(to bottom, #fff, #fff5f5); margin: 15px 0; width: 90%;
+            box-shadow: 0 8px 16px rgba(244, 123, 123, 0.2);
+            text-decoration: none; display: block; color: inherit; transition: transform 0.2s;
         }
         #promo-box:active { transform: scale(0.98); }
-        .promo-title {
-            color: #d32f2f;
-            font-weight: 900;
-            margin: 0 0 10px 0;
-            font-size: 18px;
-            text-shadow: 1px 1px 0 #fff, 2px 2px 0 rgba(211, 47, 47, 0.2);
-        }
-        .promo-content {
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            gap: 15px;
-        }
-        .promo-img {
-            width: 100px;
-            border-radius: 12px;
-            border: 3px solid #f47b7b;
-            box-shadow: 0 4px 8px rgba(0,0,0,0.1);
-        }
-        .promo-btn {
-            background: linear-gradient(to bottom, #7dc065, #5a9e43);
-            color: white;
-            padding: 10px 20px;
-            border-radius: 30px;
-            font-weight: bold;
-            font-size: 16px;
-            box-shadow: 0 4px 0 #3e7a2e;
-            text-shadow: 1px 1px 0 #3e7a2e;
-            display: inline-block;
-        }
+        .promo-title { color: #d32f2f; font-weight: 900; margin: 0 0 10px 0; font-size: 17px; }
+        .promo-content { display: flex; align-items: center; justify-content: center; gap: 15px; }
+        .promo-img { width: 90px; border-radius: 12px; border: 2px solid #f6c6c6; }
+        .promo-btn { background: linear-gradient(to bottom, var(--accent), var(--accent-dark)); color: white; padding: 10px 20px; border-radius: 30px; font-weight: bold; font-size: 15px; display: inline-block; }
 
         @keyframes pulse-anim { from { transform: translateX(-50%) scale(1); } to { transform: translateX(-50%) scale(1.1); } }
         .shake-screen { animation: shake 0.3s; }
         @keyframes shake { 0%,100%{transform:translate(0,0)} 25%{transform:translate(4px,4px)} 75%{transform:translate(-4px,-4px)} }
 
-        #enemy-thumb { transform-origin: center; transition: transform 0.4s ease-out; }
+        /* ずんだもん:滑らかな動き */
+        .zunda-pop { animation: zunda-pop 0.35s ease-out; }
+        @keyframes zunda-pop { 0%{ transform:scale(0.7) rotate(-6deg); } 55%{ transform:scale(1.15) rotate(3deg); } 100%{ transform:scale(1) rotate(0); } }
+        .zunda-idle { animation: zunda-idle 2.4s ease-in-out infinite; }
+        @keyframes zunda-idle { 0%,100%{ transform:translateY(0); } 50%{ transform:translateY(-3px); } }
+
+        /* 敵のアニメーション */
         .enemy-hit-anim { animation: enemy-hit 0.35s; }
         @keyframes enemy-hit {
-            0% { filter: brightness(1); transform: scale(1) rotate(0deg); }
-            10% { filter: brightness(2.5) drop-shadow(0 0 5px #fff); transform: scale(1.2) rotate(-8deg); }
-            25% { filter: brightness(1.2); transform: scale(0.9) rotate(6deg); }
+            0% { filter: brightness(1) drop-shadow(0 6px 6px rgba(0,0,0,0.12)); transform: scale(1) rotate(0deg); }
+            10% { filter: brightness(2) drop-shadow(0 0 10px #fff); transform: scale(1.18) rotate(-7deg); }
+            25% { filter: brightness(1.15); transform: scale(0.92) rotate(5deg); }
             45% { transform: translate(-5px,1px); }
             65% { transform: translate(4px,-1px); }
-            100% { filter: brightness(1); transform: none; }
+            100% { filter: brightness(1) drop-shadow(0 6px 6px rgba(0,0,0,0.12)); transform: none; }
         }
-        .slash-mark { position:absolute; top:0; left:0; width:100%; height:100%; pointer-events:none; opacity:0; z-index:15; }
+        .slash-mark { position:absolute; top:0; left:0; width:100%; height:100%; pointer-events:none; opacity:0; z-index:15; border-radius:50%; }
         .slash-mark.active { animation: slash-flash 0.35s; }
         @keyframes slash-flash {
             0% { opacity:0; }
@@ -131,6 +165,10 @@
             60% { transform: rotate(80deg) translateY(8px); opacity:1; }
             100% { transform: rotate(95deg) translateY(18px); opacity:0; }
         }
+        .enemy-spawn-anim { animation: enemy-spawn 0.4s ease-out; }
+        @keyframes enemy-spawn { 0%{ transform:scale(0.3) translateY(20px); opacity:0; } 70%{ transform:scale(1.1) translateY(-4px); opacity:1; } 100%{ transform:scale(1) translateY(0); opacity:1; } }
+        .enemy-idle { animation: enemy-idle 2.6s ease-in-out infinite; }
+        @keyframes enemy-idle { 0%,100%{ transform:translateY(0); } 50%{ transform:translateY(-4px); } }
     </style>
 </head>
 <body>
@@ -139,16 +177,16 @@
     <div id="bonus-pop-up">MAX COMBO BONUS!</div>
 
     <div id="start-screen" class="full-overlay">
-        <img src="images/game_title.png" style="width:80%; margin-bottom:20px; border:4px solid #7dc065; border-radius:15px;">
+        <img src="images/game_title.png" style="width:80%; margin-bottom:20px; border-radius:18px; box-shadow:0 8px 20px rgba(0,0,0,0.12);">
         <button id="btn-start-game" class="big-btn">冒険開始なのだ！</button>
-        <p id="loading-msg" style="font-size:14px; color:#7dc065; font-weight:bold; margin-top:15px;">プログラム読み込み中...</p>
+        <p id="loading-msg" style="font-size:14px; color:var(--accent-dark); font-weight:bold; margin-top:15px;">プログラム読み込み中...</p>
         <div id="err-log" style="color:red; font-size:10px; display:none;"></div>
     </div>
 
     <div id="result-screen" class="full-overlay" style="display:none;">
         <h2 style="margin:0;">結果発表なのだ！</h2>
-        <div style="font-size:40px; font-weight:bold; color:#ff9800; margin:5px 0;"><span id="final-score">0</span>点</div>
-        
+        <div style="font-size:40px; font-weight:bold; color:var(--gold); margin:5px 0;"><span id="final-score">0</span>点</div>
+
         <a href="https://line.me/S/sticker/32533905" target="_blank" id="promo-box">
             <p class="promo-title">＼ もっとずんだもんしゃべるのだ！ ／</p>
             <div class="promo-content">
@@ -160,13 +198,13 @@
         </a>
 
         <table class="rank-table" style="width:100%; border-collapse:collapse;"><tbody id="rank-body"></tbody></table>
-        <button class="big-btn" onclick="location.reload()" style="background:#ffda44; color:#333; margin-top:15px;">もう一度遊ぶ</button>
+        <button class="big-btn" onclick="location.reload()" style="background:linear-gradient(90deg,#ffda44,#ffb33d); color:#5a3b00; margin-top:15px;">もう一度遊ぶ</button>
     </div>
 
     <div id="all-clear-screen" class="full-overlay" style="display:none;">
-        <h2 style="margin:0; color:#7dc065; font-size:24px;">🎉100問完全制覇なのだ！🎉</h2>
-        <div style="font-size:32px; font-weight:bold; color:#ff9800; margin:5px 0;"><span id="clear-score">0</span>点</div>
-        <a href="#" style="display:block; margin:10px 0; border:4px solid #ffda44; border-radius:15px; overflow:hidden; width:90%;">
+        <h2 style="margin:0; color:var(--accent-dark); font-size:24px;">🎉100問完全制覇なのだ！🎉</h2>
+        <div style="font-size:32px; font-weight:bold; color:var(--gold); margin:5px 0;"><span id="clear-score">0</span>点</div>
+        <a href="#" style="display:block; margin:10px 0; border-radius:16px; overflow:hidden; width:90%; box-shadow:0 6px 14px rgba(0,0,0,0.1);">
             <p style="background:#ffda44; margin:0; padding:5px; font-weight:bold; color:#333; font-size:12px;">▼ 次の冒険を選ぶのだ！ ▼</p>
             <img src="images/next_stage_banner.png" style="width:100%; display:block;" alt="次ステージ">
         </a>
@@ -176,30 +214,39 @@
 
     <div id="top-battle-area">
         <div id="combo-aura"></div>
-        <div class="status-pill" style="align-self: flex-start;">
-            <div style="position:relative; width:30px; height:30px;">
-                <img id="enemy-thumb" src="images/enemy_weak.png" style="width:30px; height:30px;">
+
+        <div id="enemy-stage">
+            <div id="enemy-name-tag">スライム</div>
+            <div id="enemy-visual-wrap">
+                <div id="enemy-visual" class="enemy-idle"></div>
                 <div id="slash-mark" class="slash-mark"></div>
             </div>
-            <div class="hp-bg"><div id="enemy-hp-fill" class="hp-fill"></div></div>
+            <div class="enemy-hp-wrap hp-row">
+                <span class="hp-icon">💢</span>
+                <div class="hp-bg"><div id="enemy-hp-fill" class="hp-fill"></div></div>
+            </div>
         </div>
+
         <div id="main-action-view">
             <div id="combo-pop">0 COMBO!</div>
-            <img id="main-illust" src="images/gemini_zunda_think.png">
         </div>
-        <div class="status-pill" style="align-self: flex-end;">
-            <div class="hp-bg"><div id="player-hp-fill" class="hp-fill"></div></div>
-            <img src="images/gemini_zunda_think.png" style="width:30px; height:30px; border-radius:50%; border:2px solid #7dc065;">
+
+        <div id="player-pill">
+            <div class="player-hp-mini hp-row">
+                <span class="hp-icon">❤️</span>
+                <div class="hp-bg"><div id="player-hp-fill" class="hp-fill"></div></div>
+            </div>
+            <img id="main-illust" src="images/gemini_zunda_think.png">
         </div>
     </div>
 
     <div id="bottom-ui-area">
-        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:5px;">
-            <div id="btn-mochi" style="border:2px solid #7dc065; padding:2px 8px; border-radius:8px; cursor:pointer; background:#fff; font-size:12px; font-weight:bold;">🍡 x<span id="mochi-val">3</span></div>
-            <div id="timer-bg" style="flex:1; margin:0 10px;"><div id="timer-bar"></div></div>
-            <div style="font-weight:bold; color:#ff9800; font-size:14px;">SCORE: <span id="score-val">0</span></div>
+        <div class="top-row">
+            <div id="btn-mochi" class="chip">🍡 x<span id="mochi-val">3</span></div>
+            <div id="timer-bg"><div id="timer-bar"></div></div>
+            <div class="chip score-chip">★ <span id="score-val">0</span></div>
         </div>
-        <div style="text-align:right; font-size:11px; color:#7dc065; font-weight:bold; margin-bottom:2px;">正解数: <span id="correct-count">0</span>/100</div>
+        <div id="correct-row">正解数: <span id="correct-count">0</span>/100</div>
         <div id="question-box"></div>
         <div id="choices" class="choice-grid"></div>
     </div>
@@ -220,11 +267,11 @@
         tick: new Audio('sounds/se_tick.mp3'),
         heal: new Audio('sounds/se_heal.mp3'),
         defeat: new Audio('sounds/se_defeat.mp3'),
-        comboSE: new Audio('sounds/se_combo.mp3'),
+        comboSE: new Audio('sounds/se_correct2.mp3'),
         vCombo1: new Audio('sounds/voice_combo1.mp3'),
         vCombo2: new Audio('sounds/voice_combo2.mp3'),
         vCombo3: new Audio('sounds/voice_combo3.mp3'),
-        vCombo4: new Audio('sounds/voice_combo4.mp3'),
+        vCombo4: new Audio('sounds/voice_highscore.mp3'),
         vPromo: new Audio('sounds/voice_promo.mp3')
     };
 
@@ -235,6 +282,31 @@
         boss: [{q:"光は1秒で地球を何周する？",c:["約3周","約7.5周","約10周"],a:1},{q:"将棋で裏返っても名不変なのは？",c:["飛車","角行","王将"],a:2},{q:"原子番号1番の元素は？",c:["ヘリウム","水素","リチウム"],a:1},{q:"マリアナ海溝の深さは？",c:["約5000m","約8000m","1万m以上"],a:2},{q:"引力を発見したきっかけの果物？",c:["桃","オレンジ","リンゴ"],a:2},{q:"日本の初代総理大臣は？",c:["伊藤博文","福沢諭吉","織田信長"],a:0},{q:"モナリザの作者は誰？",c:["ピカソ","ダヴィンチ","ゴッホ"],a:1},{q:"1兆の1000倍を何と呼ぶ？",c:["垓","京","穣"],a:1},{q:"太陽系最大の惑星は？",c:["土星","天王星","木星"],a:2},{q:"ピラミッドが作られた目的は？",c:["天文台","王の墓","穀物庫"],a:1},{q:"第九の作曲家は誰？",c:["ベートーヴェン","モーツァルト","バッハ"],a:0},{q:"月の満ち欠けの周期は何日？",c:["28日","29.5日","31日"],a:1},{q:"昭和基地がある場所は？",c:["南極","北極","月面"],a:0},{q:"ハワイはアメリカ何番目の州？",c:["48番目","49番目","50番目"],a:2},{q:"オーロラが発生する層は？",c:["対流圏","成層圏","熱圏"],a:2},{q:"人とDNAが98%同じなのは？",c:["サル","ブタ","チンパンジー"],a:2},{q:"宇宙創生の爆発名は？",c:["ビッグバン","ノヴァ","ブラックホール"],a:0},{q:"最小面積の国はどこ？",c:["モナコ","バチカン","ナウル"],a:1},{q:"ノーベルが発明したのは？",c:["電球","電話","ダイナマイト"],a:2},{q:"土俵の直径は何メートル？",c:["4.24m","4.55m","5m"],a:1},{q:"世界一高いビルがあるのは？",c:["ドバイ","上海","ニューヨーク"],a:0},{q:"光が1年間に進む距離を何という？",c:["1光年","1マイル","1パーセク"],a:0},{q:"イタリアのユーロ前の通貨は？",c:["フラン","リラ","マルク"],a:1},{q:"アポロ11号が月面着陸した年は？",c:["1964年","1969年","1972年"],a:1},{q:"将棋盤のマス目は全部でいくつ？",c:["64マス","81マス","100マス"],a:1},{q:"東京タワーの高さは何m？",c:["300m","333m","634m"],a:1},{q:"世界一長い小説とされるのは？",c:["戦争と平和","失われた時を求めて","源氏物語"],a:1},{q:"野球一辺のダイヤモンドの長さ？",c:["25m","27.4m","30m"],a:1},{q:"一円玉の重さは何グラム？",c:["1g","2g","5g"],a:0},{q:"日本の鉄道初走行区間はどこ？",c:["新橋から横浜","上野から浅草","東京から大阪"],a:0},{q:"富士山の高さは何メートル？",c:["3333m","3776m","4000m"],a:1},{q:"星座の数は全部でいくつ？",c:["12星座","48星座","88星座"],a:2},{q:"「機動戦士ガンダム」で、ガンダムに乗る主人公の名前は？",c:["シャア・アズナブル","アムロ・レイ","ブライト・ノア"],a:1},{q:"ドラえもんが生まれた年は？",c:["2012年","2112年","3012年"],a:1},{q:"1ドル＝100円から1ドル＝150円になることを何という？",c:["円高","円安","円切り上げ"],a:1}]
     };
 
+    // ===== 敵モンスターデザイン(5種類・コード描画) =====
+    const enemyDesigns = [
+        { name: "スライム", svg: `<svg viewBox="0 0 100 100"><ellipse cx="50" cy="62" rx="40" ry="32" fill="#6fd17e"/><ellipse cx="50" cy="55" rx="40" ry="28" fill="#8ce89b"/><ellipse cx="35" cy="42" rx="8" ry="10" fill="#fff" opacity="0.6"/><circle cx="37" cy="58" r="6" fill="#26322c"/><circle cx="63" cy="58" r="6" fill="#26322c"/><circle cx="39" cy="56" r="2" fill="#fff"/><circle cx="65" cy="56" r="2" fill="#fff"/><path d="M38 72 Q50 80 62 72" stroke="#26322c" stroke-width="3" fill="none" stroke-linecap="round"/></svg>` },
+        { name: "ゴースト", svg: `<svg viewBox="0 0 100 100"><path d="M50 10 C25 10 15 30 15 55 L15 85 L27 73 L39 85 L50 73 L61 85 L73 73 L85 85 L85 55 C85 30 75 10 50 10 Z" fill="#b89cf2"/><circle cx="37" cy="50" r="7" fill="#26322c"/><circle cx="63" cy="50" r="7" fill="#26322c"/><circle cx="39" cy="48" r="2.4" fill="#fff"/><circle cx="65" cy="48" r="2.4" fill="#fff"/><ellipse cx="50" cy="66" rx="8" ry="5" fill="#26322c"/></svg>` },
+        { name: "こうもり", svg: `<svg viewBox="0 0 100 100"><path d="M50 35 L15 20 L28 42 L8 45 L30 55 L18 70 L40 62 L50 80 L60 62 L82 70 L70 55 L92 45 L72 42 L85 20 Z" fill="#4a4a6a"/><circle cx="50" cy="48" r="20" fill="#5e5e82"/><circle cx="43" cy="46" r="5" fill="#ff6b6b"/><circle cx="57" cy="46" r="5" fill="#ff6b6b"/><circle cx="43" cy="46" r="2" fill="#fff"/><circle cx="57" cy="46" r="2" fill="#fff"/><path d="M44 58 Q50 63 56 58" stroke="#26322c" stroke-width="2.5" fill="none" stroke-linecap="round"/></svg>` },
+        { name: "りゅうのこ", svg: `<svg viewBox="0 0 100 100"><ellipse cx="50" cy="60" rx="36" ry="30" fill="#ff9d5c"/><path d="M32 34 L38 18 L44 34 Z" fill="#ff9d5c"/><path d="M56 34 L62 18 L68 34 Z" fill="#ff9d5c"/><path d="M78 60 Q95 55 92 72 Q85 66 78 68 Z" fill="#ff9d5c"/><circle cx="38" cy="56" r="6.5" fill="#26322c"/><circle cx="62" cy="56" r="6.5" fill="#26322c"/><circle cx="40" cy="54" r="2.2" fill="#fff"/><circle cx="64" cy="54" r="2.2" fill="#fff"/><path d="M40 72 Q50 78 60 72" stroke="#7a3b10" stroke-width="3" fill="none" stroke-linecap="round"/><ellipse cx="50" cy="60" rx="36" ry="30" fill="none" stroke="#e8824a" stroke-width="3"/></svg>` },
+        { name: "ロボット", svg: `<svg viewBox="0 0 100 100"><rect x="22" y="15" width="10" height="14" fill="#9fb3c8"/><circle cx="27" cy="12" r="5" fill="#ffd93d"/><rect x="18" y="28" width="64" height="50" rx="14" fill="#c7d6e3"/><rect x="26" y="38" width="48" height="30" rx="8" fill="#5b7a94"/><circle cx="42" cy="53" r="7" fill="#7ef0ff"/><circle cx="58" cy="53" r="7" fill="#7ef0ff"/><rect x="36" y="80" width="12" height="10" fill="#9fb3c8"/><rect x="52" y="80" width="12" height="10" fill="#9fb3c8"/></svg>` }
+    ];
+    let enemyIndex = 0;
+
+    function renderEnemy(idx, opts) {
+        opts = opts || {};
+        const d = enemyDesigns[idx % enemyDesigns.length];
+        document.getElementById('enemy-name-tag').innerText = d.name;
+        const visual = document.getElementById('enemy-visual');
+        visual.innerHTML = d.svg;
+        visual.classList.remove('enemy-idle');
+        if (opts.spawn) {
+            visual.classList.remove('enemy-spawn-anim'); void visual.offsetWidth; visual.classList.add('enemy-spawn-anim');
+            setTimeout(() => { visual.classList.add('enemy-idle'); }, 420);
+        } else {
+            visual.classList.add('enemy-idle');
+        }
+    }
+
     let hp = 100, eHp = 100, score = 0, mochi = 3, streak = 0, defCount = 0, totalCorrect = 0, maxStreakThisTurn = 0;
     let timerId = null, currentPool = JSON.parse(JSON.stringify(masterQuizData));
 
@@ -243,7 +315,17 @@
         sounds.vPromo.volume = 1.0; sounds.tick.volume = 1.0; sounds.comboSE.volume = 1.0; sounds.bgm.volume = 0.1; sounds.bgm.loop = true;
         document.getElementById('start-screen').style.display = 'none';
         sounds.bgm.play().catch(e => {});
+        renderEnemy(enemyIndex, {spawn:true});
         updateUI(); loadQuiz();
+    }
+
+    function popZunda(src) {
+        const img = document.getElementById('main-illust');
+        img.classList.remove('zunda-idle', 'zunda-pop');
+        img.src = src;
+        void img.offsetWidth;
+        img.classList.add('zunda-pop');
+        setTimeout(() => { img.classList.remove('zunda-pop'); img.classList.add('zunda-idle'); }, 350);
     }
 
     function loadQuiz() {
@@ -260,9 +342,8 @@
 
         let qIdx = Math.floor(Math.random() * pool.length);
         let q = pool.splice(qIdx, 1)[0];
-        
-        document.getElementById('enemy-thumb').src = "images/enemy_" + type + ".png";
-        document.getElementById('main-illust').src = "images/gemini_zunda_think.png";
+
+        popZunda("images/gemini_zunda_think.png");
         document.getElementById('question-box').innerText = q.q;
         const container = document.getElementById('choices');
         container.innerHTML = "";
@@ -271,22 +352,22 @@
             btn.className = "choice-btn"; btn.innerText = choice;
             btn.onclick = () => {
                 clearInterval(timerId);
+                document.querySelectorAll('.choice-btn').forEach(b => b.disabled = true);
                 if(i === q.a) {
+                    btn.classList.add('correct-flash');
                     streak++; totalCorrect++;
                     if(streak > maxStreakThisTurn) maxStreakThisTurn = streak;
                     score += (100 + (streak > 1 ? streak * 25 : 0));
                     eHp -= 25;
                     if (eHp > 0) {
                         sounds.ok.play().catch(e=>{});
-                        const eThumb = document.getElementById('enemy-thumb');
+                        const visual = document.getElementById('enemy-visual');
                         const slash = document.getElementById('slash-mark');
-                        eThumb.src = "images/enemy_" + type + "_damage.png";
-                        eThumb.classList.remove('enemy-hit-anim'); void eThumb.offsetWidth; eThumb.classList.add('enemy-hit-anim');
+                        visual.classList.remove('enemy-hit-anim'); void visual.offsetWidth; visual.classList.add('enemy-hit-anim');
                         slash.classList.remove('active'); void slash.offsetWidth; slash.classList.add('active');
                         setTimeout(() => {
-                            eThumb.classList.remove('enemy-hit-anim');
+                            visual.classList.remove('enemy-hit-anim');
                             slash.classList.remove('active');
-                            eThumb.src = "images/enemy_" + type + ".png";
                             updateEnemyLean();
                         }, 350);
                         setTimeout(() => {
@@ -296,12 +377,13 @@
                         }, 400);
                         showComboPop();
                     }
-                    document.getElementById('main-illust').src = "images/gemini_attack_weak.png";
+                    popZunda("images/gemini_attack_weak.png");
                 } else {
+                    btn.classList.add('wrong-flash');
                     checkComboBonus();
-                    streak = 0; maxStreakThisTurn = 0; hp -= 20; 
+                    streak = 0; maxStreakThisTurn = 0; hp -= 20;
                     sounds.ng.play().catch(e=>{});
-                    document.getElementById('main-illust').src = "images/gemini_damage_weak_comic.png";
+                    popZunda("images/gemini_damage_weak_comic.png");
                     document.getElementById('game-container').classList.add('shake-screen');
                     setTimeout(() => document.getElementById('game-container').classList.remove('shake-screen'), 300);
                 }
@@ -334,22 +416,22 @@
     }
 
     function updateEnemyLean() {
-        const eThumb = document.getElementById('enemy-thumb');
-        if (!eThumb || eThumb.classList.contains('enemy-hit-anim') || eThumb.classList.contains('enemy-defeat-anim')) return;
+        const visual = document.getElementById('enemy-visual');
+        if (!visual || visual.classList.contains('enemy-hit-anim') || visual.classList.contains('enemy-defeat-anim')) return;
         let lean = Math.min((100 - Math.max(0, eHp)) * 0.3, 25);
-        eThumb.style.transform = "rotate(" + lean + "deg)";
+        visual.style.transform = "rotate(" + lean + "deg)";
     }
 
     function updateUI() {
         const pFill = document.getElementById('player-hp-fill');
         if (pFill) {
             pFill.style.width = hp + "%";
-            pFill.style.backgroundColor = hp > 60 ? "#7dc065" : (hp > 30 ? "#ffda44" : "#f47b7b");
+            pFill.style.background = hp > 60 ? "linear-gradient(90deg, var(--accent), var(--accent-dark))" : (hp > 30 ? "linear-gradient(90deg, #ffda44, #ffb33d)" : "linear-gradient(90deg, #f47b7b, #d94b4b)");
         }
         const eFill = document.getElementById('enemy-hp-fill');
         if (eFill) {
             eFill.style.width = Math.max(0, eHp) + "%";
-            eFill.style.backgroundColor = eHp > 60 ? "#7dc065" : (eHp > 30 ? "#ffda44" : "#f47b7b");
+            eFill.style.background = eHp > 60 ? "linear-gradient(90deg, var(--accent), var(--accent-dark))" : (eHp > 30 ? "linear-gradient(90deg, #ffda44, #ffb33d)" : "linear-gradient(90deg, #f47b7b, #d94b4b)");
         }
         document.getElementById('score-val').innerText = score;
         document.getElementById('mochi-val').innerText = mochi;
@@ -360,10 +442,8 @@
         if (streak >= 4) {
             aura.style.opacity = "1";
             aura.style.animation = "aura-flicker " + (0.5 - Math.min(streak * 0.05, 0.4)) + "s infinite alternate";
-            document.getElementById('game-container').style.backgroundColor = "#fff4e6";
         } else {
             aura.style.opacity = "0"; aura.style.animation = "none";
-            document.getElementById('game-container').style.backgroundColor = "#fff";
         }
     }
 
@@ -374,31 +454,34 @@
             checkComboBonus();
             let hb = hp * 10, mb = mochi * 200, tb = 500 + hb + mb;
             score += tb; defCount++;
-            const eThumb = document.getElementById('enemy-thumb');
-            eThumb.classList.add('enemy-defeat-anim');
+            const visual = document.getElementById('enemy-visual');
+            visual.classList.remove('enemy-idle');
+            visual.classList.add('enemy-defeat-anim');
             updateUI();
             const b = document.getElementById('bonus-pop-up');
             b.innerText = "撃破！\nHPボーナス:+" + hb + "\nもちボーナス:+" + mb + "\n計+" + tb + "点！";
             b.style.display = "block";
             setTimeout(() => {
                 b.style.display = "none";
-                eThumb.classList.remove('enemy-defeat-anim');
+                visual.classList.remove('enemy-defeat-anim');
                 eHp = 100;
+                enemyIndex = (enemyIndex + 1) % enemyDesigns.length;
+                renderEnemy(enemyIndex, {spawn:true});
                 updateUI(); loadQuiz();
             }, 1200);
         } else { setTimeout(loadQuiz, 1300); }
     }
 
-    function showComboPop() { 
-        const p = document.getElementById('combo-pop'); 
-        p.innerText = streak + " COMBO!"; p.style.opacity = "1"; 
+    function showComboPop() {
+        const p = document.getElementById('combo-pop');
+        p.innerText = streak + " COMBO!"; p.style.opacity = "1";
         if(streak >= 4) p.classList.add('max-combo-active'); else p.classList.remove('max-combo-active');
-        setTimeout(() => p.style.opacity = "0", 800); 
+        setTimeout(() => p.style.opacity = "0", 800);
     }
 
     // ▼▼▼ 音声修正ポイント ▼▼▼
     function endGame() {
-        clearInterval(timerId); sounds.bgm.pause(); 
+        clearInterval(timerId); sounds.bgm.pause();
         sounds.result.currentTime = 0; sounds.result.play().catch(e=>{});
         // 結果発表時にボイスを再生
         setTimeout(() => { sounds.vPromo.currentTime = 0; sounds.vPromo.play().catch(e=>{}); }, 500);
@@ -409,7 +492,7 @@
 
     // ▼▼▼ 音声修正ポイント ▼▼▼
     function showAllClearScreen() {
-        clearInterval(timerId); sounds.bgm.pause(); 
+        clearInterval(timerId); sounds.bgm.pause();
         sounds.result.currentTime = 0; sounds.result.play().catch(e=>{});
         // オールクリア時に一番盛り上がるボイスを再生
         setTimeout(() => { sounds.vCombo4.currentTime = 0; sounds.vCombo4.play().catch(e=>{}); }, 500);
@@ -434,6 +517,7 @@
     document.getElementById('btn-mochi').onclick = function() {
         if(mochi > 0 && hp < 100) { mochi--; hp = Math.min(hp + 50, 100); sounds.heal.play().catch(e=>{}); updateUI(); }
     };
+    renderEnemy(enemyIndex);
     document.getElementById('loading-msg').innerText = "準備完了なのだ！";
 </script>
 </body>
