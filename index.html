@@ -47,7 +47,8 @@
         #enemy-stage { display:flex; flex-direction:column; align-items:center; gap:4px; z-index:6; }
         #enemy-name-tag { font-size:12px; font-weight:bold; color:var(--sub-ink); background:rgba(255,255,255,0.8); padding:2px 12px; border-radius:20px; }
         #enemy-visual-wrap { position:relative; width:118px; height:118px; display:flex; align-items:center; justify-content:center; }
-        #enemy-visual { width:100%; height:100%; transform-origin:center; transition: transform 0.4s ease-out; filter: drop-shadow(0 6px 6px rgba(0,0,0,0.12)); }
+        #enemy-visual-wrap::after { content:""; position:absolute; bottom:4px; width:70px; height:14px; background:rgba(0,0,0,0.12); border-radius:50%; filter:blur(3px); z-index:-1; }
+        #enemy-visual { width:100%; height:100%; transform-origin:center; transition: transform 0.4s ease-out; }
         .enemy-hp-wrap { width:140px; }
 
         .hp-row { display:flex; align-items:center; gap:6px; width:100%; }
@@ -143,12 +144,12 @@
         /* 敵のアニメーション */
         .enemy-hit-anim { animation: enemy-hit 0.35s; }
         @keyframes enemy-hit {
-            0% { filter: brightness(1) drop-shadow(0 6px 6px rgba(0,0,0,0.12)); transform: scale(1) rotate(0deg); }
-            10% { filter: brightness(2) drop-shadow(0 0 10px #fff); transform: scale(1.18) rotate(-7deg); }
+            0% { filter: brightness(1); transform: scale(1) rotate(0deg); }
+            10% { filter: brightness(2); transform: scale(1.18) rotate(-7deg); }
             25% { filter: brightness(1.15); transform: scale(0.92) rotate(5deg); }
             45% { transform: translate(-5px,1px); }
             65% { transform: translate(4px,-1px); }
-            100% { filter: brightness(1) drop-shadow(0 6px 6px rgba(0,0,0,0.12)); transform: none; }
+            100% { filter: brightness(1); transform: none; }
         }
         .slash-mark { position:absolute; top:0; left:0; width:100%; height:100%; pointer-events:none; opacity:0; z-index:15; border-radius:50%; }
         .slash-mark.active { animation: slash-flash 0.35s; }
@@ -502,7 +503,8 @@
     }
 
     function saveRanking(targetId) {
-        let ranks = JSON.parse(localStorage.getItem('zunda_rankings')) || [];
+        let ranks = [];
+        try { ranks = JSON.parse(localStorage.getItem('zunda_rankings')) || []; } catch(e) { ranks = []; }
         if (ranks.length < 3 || score > (ranks[ranks.length-1]?.score || 0)) {
             // ▼▼▼ 音声修正ポイント ▼▼▼
             // ランクイン時にファンファーレ音を再生
