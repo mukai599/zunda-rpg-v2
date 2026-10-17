@@ -411,7 +411,7 @@
         timerId = setInterval(() => {
             time -= 1.0; document.getElementById('timer-bar').style.width = time + "%";
             if (Math.floor(time) < lastTick) { try{ sounds.tick.currentTime=0; sounds.tick.play(); }catch(e){} lastTick = Math.floor(time); }
-            if(time <= 0) { checkComboBonus(); streak = 0; maxStreakThisTurn = 0; hp -= 20; updateUI(); loadQuiz(); }
+            if(time <= 0) { clearInterval(timerId); checkComboBonus(); streak = 0; maxStreakThisTurn = 0; hp -= 20; updateUI(); checkBattle(); }
         }, 100);
     }
 
