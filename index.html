@@ -35,10 +35,27 @@
 
         /* ===== バトルエリア ===== */
         #top-battle-area {
-            background: linear-gradient(165deg, #cfe8fb 0%, #e9f4fc 60%, #fff 100%);
+            background: linear-gradient(165deg, #f4d9a8 0%, #e3b06a 45%, #a66a35 100%);
             flex: 0 0 auto; height: 230px;
             padding: 18px 16px 14px; display: flex; flex-direction: column;
             align-items: center; justify-content: flex-start; position: relative; gap: 6px; overflow: hidden;
+        }
+        #top-battle-area::before {
+            content: ""; position: absolute; inset: 0; pointer-events: none; opacity: 0.5;
+            background-image: repeating-linear-gradient(0deg, rgba(0,0,0,0.05) 0 2px, transparent 2px 38px),
+                               repeating-linear-gradient(90deg, rgba(0,0,0,0.05) 0 2px, transparent 2px 64px);
+        }
+        #top-battle-area.tower-mid {
+            background: linear-gradient(165deg, #d7e4fb 0%, #9fb8ee 45%, #5d72c4 100%);
+        }
+        #top-battle-area.tower-boss {
+            background: linear-gradient(165deg, #5b3f85 0%, #8a4fb0 45%, #d98f3f 100%);
+        }
+        #tower-floor-tag {
+            position: absolute; top: 8px; left: 10px; z-index: 7;
+            font-size: 10px; font-weight: bold; color: rgba(255,255,255,0.95);
+            background: rgba(0,0,0,0.25); padding: 3px 10px; border-radius: 20px;
+            text-shadow: 0 1px 2px rgba(0,0,0,0.4);
         }
 
         #combo-aura { position: absolute; top:0; left:0; width:100%; height:100%; pointer-events: none; opacity: 0; transition: 0.5s; background: radial-gradient(circle, rgba(255,179,61,0.45) 0%, rgba(255,105,61,0) 70%); z-index: 1; }
@@ -228,6 +245,7 @@
     </div>
 
     <div id="top-battle-area">
+        <div id="tower-floor-tag">🗼 下層</div>
         <div id="combo-aura"></div>
 
         <div id="enemy-stage">
@@ -350,6 +368,18 @@
         setTimeout(() => { img.classList.remove('zunda-pop'); img.classList.add('zunda-idle'); }, 350);
     }
 
+    let currentFloor = null;
+    function updateTowerFloor(type) {
+        if (type === currentFloor) return;
+        currentFloor = type;
+        const area = document.getElementById('top-battle-area');
+        const tag = document.getElementById('tower-floor-tag');
+        area.classList.remove('tower-mid', 'tower-boss');
+        if (type === 'mid') { area.classList.add('tower-mid'); tag.innerText = '🗼 中層'; }
+        else if (type === 'boss') { area.classList.add('tower-boss'); tag.innerText = '🗼 最上階'; }
+        else { tag.innerText = '🗼 下層'; }
+    }
+
     function loadQuiz() {
         if(hp <= 0) return;
         if(totalCorrect >= 100) { showAllClearScreen(); return; }
@@ -365,6 +395,7 @@
         let qIdx = Math.floor(Math.random() * pool.length);
         let q = pool.splice(qIdx, 1)[0];
 
+        updateTowerFloor(type);
         popZunda("images/gemini_zunda_think.png");
         document.getElementById('question-box').innerText = q.q;
         const container = document.getElementById('choices');
