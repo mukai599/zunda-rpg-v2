@@ -190,6 +190,15 @@
         .rank-table td:first-child { width: 36px; font-size: 17px; text-align: center; }
         .rank-table td:last-child { text-align: right; color: #7a3b10; }
 
+        .online-rank-btn {
+            width: 100%; margin-top: 10px; padding: 10px; border: none; border-radius: 30px;
+            background: linear-gradient(90deg, #4f8ef0, #6c5ce7); color: #fff;
+            font-weight: bold; font-size: 13px; cursor: pointer;
+            box-shadow: 0 4px 10px rgba(79,142,240,0.35);
+        }
+        .online-rank-btn:active { transform: scale(0.98); }
+        #online-rank-screen { z-index: 2500; }
+
         @keyframes pulse-anim { from { transform: translateX(-50%) scale(1); } to { transform: translateX(-50%) scale(1.1); } }
         .shake-screen { animation: shake 0.3s; }
         @keyframes shake { 0%,100%{transform:translate(0,0)} 25%{transform:translate(4px,4px)} 75%{transform:translate(-4px,-4px)} }
@@ -257,6 +266,7 @@
         </a>
 
         <div class="rank-table-frame"><table class="rank-table"><tbody id="rank-body"></tbody></table></div>
+        <button class="online-rank-btn" onclick="openOnlineRanking()">🌍 全国ランキングを見る／送信する</button>
         <button class="big-btn" onclick="location.reload()" style="background:linear-gradient(90deg,#ffda44,#ffb33d); color:#5a3b00; margin-top:15px;">もう一度遊ぶ</button>
     </div>
 
@@ -269,7 +279,18 @@
             <img src="images/next_stage_banner.png" style="width:100%; display:block;" alt="次ステージ">
         </a>
         <div class="rank-table-frame"><table class="rank-table"><tbody id="clear-rank-body"></tbody></table></div>
+        <button class="online-rank-btn" onclick="openOnlineRanking()">🌍 全国ランキングを見る／送信する</button>
         <button class="big-btn" onclick="location.reload()" style="padding:10px 30px; font-size:16px;">最初から遊ぶ</button>
+    </div>
+
+    <div id="online-rank-screen" class="full-overlay" style="display:none;">
+        <h2 style="margin:0 0 10px;">🌍 全国ランキング</h2>
+        <div id="online-rank-status" style="font-size:13px; color:var(--sub-ink); margin-bottom:10px;">読み込み中...</div>
+        <div class="rank-table-frame" style="width:90%; max-height:40vh; overflow-y:auto;">
+            <table class="rank-table"><tbody id="online-rank-body"></tbody></table>
+        </div>
+        <button class="big-btn" id="online-submit-btn" onclick="submitOnlineScore()" style="margin-top:14px;">このスコアを送信する</button>
+        <button class="big-btn" onclick="closeOnlineRanking()" style="background:#eee; color:#555; box-shadow:none; margin-top:10px;">閉じる</button>
     </div>
 
     <div id="top-battle-area">
@@ -682,6 +703,87 @@
     };
     renderEnemy(enemyIndex);
     document.getElementById('loading-msg').innerText = "準備完了なのだ！";
+</script>
+
+<script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.13.2/firebase-app.js";
+    import {
+        getFirestore, collection, addDoc, query, orderBy, limit, getDocs, serverTimestamp
+    } from "https://www.gstatic.com/firebasejs/10.13.2/firebase-firestore.js";
+
+    const firebaseConfig = {
+        apiKey: "AIzaSyD6jW9rskS8GeWuAbs0252yx_FQeTEHZqA",
+        authDomain: "score-c2681.firebaseapp.com",
+        projectId: "score-c2681",
+        storageBucket: "score-c2681.firebasestorage.app",
+        messagingSenderId: "376813735715",
+        appId: "1:376813735715:web:f3f1369099dfeb72428696"
+    };
+
+    const app = initializeApp(firebaseConfig);
+    const db = getFirestore(app);
+    let hasSubmittedThisRun = false;
+
+    async function loadOnlineRanking() {
+        const statusEl = document.getElementById('online-rank-status');
+        const bodyEl = document.getElementById('online-rank-body');
+        statusEl.innerText = "読み込み中...";
+        bodyEl.innerHTML = "";
+        try {
+            const q = query(collection(db, "scores"), orderBy("score", "desc"), limit(30));
+            const snap = await getDocs(q);
+            const medals = ["🥇", "🥈", "🥉"];
+            let i = 0;
+            let rows = "";
+            snap.forEach(doc => {
+                const d = doc.data();
+                rows += "<tr><td>" + (medals[i] || (i+1)) + "</td><td>" + escapeHtml(d.name) + "</td><td>" + d.score + "</td></tr>";
+                i++;
+            });
+            bodyEl.innerHTML = rows || "<tr><td colspan='3'>まだ誰も送信していません</td></tr>";
+            statusEl.innerText = "接続成功！(最新30件)";
+        } catch (e) {
+            statusEl.innerText = "オンラインに接続できませんでした(通信環境をご確認ください)";
+            console.error(e);
+        }
+    }
+
+    function escapeHtml(s) {
+        return String(s).replace(/[&<>"']/g, c => ({ "&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;" }[c]));
+    }
+
+    window.openOnlineRanking = function() {
+        document.getElementById('online-rank-screen').style.display = 'flex';
+        document.getElementById('online-submit-btn').style.display = hasSubmittedThisRun ? 'none' : 'block';
+        loadOnlineRanking();
+    };
+
+    window.closeOnlineRanking = function() {
+        document.getElementById('online-rank-screen').style.display = 'none';
+    };
+
+    window.submitOnlineScore = async function() {
+        const statusEl = document.getElementById('online-rank-status');
+        let n = prompt("全国ランキングに登録するお名前は？", "ずんだ名無し");
+        if (!n) return;
+        n = n.slice(0, 20);
+        const currentScore = typeof score !== 'undefined' ? score : 0;
+        statusEl.innerText = "送信中...";
+        try {
+            await addDoc(collection(db, "scores"), {
+                name: n,
+                score: currentScore,
+                createdAt: serverTimestamp()
+            });
+            hasSubmittedThisRun = true;
+            document.getElementById('online-submit-btn').style.display = 'none';
+            statusEl.innerText = "送信しました！";
+            loadOnlineRanking();
+        } catch (e) {
+            statusEl.innerText = "送信に失敗しました(通信環境をご確認ください)";
+            console.error(e);
+        }
+    };
 </script>
 </body>
 </html>
