@@ -184,17 +184,34 @@
         .promo-btn { background: linear-gradient(to bottom, var(--accent), var(--accent-dark)); color: white; padding: 10px 20px; border-radius: 30px; font-weight: bold; font-size: 15px; display: inline-block; }
 
         .rank-table-frame {
-            background: url('images/ranking_bg.jpg') center / cover no-repeat;
-            border-radius: 14px; padding: 26px 20px 22px; margin: 12px 0;
-            box-shadow: 0 4px 14px rgba(0,0,0,0.18);
+            background: linear-gradient(160deg, #332a55, #1b1630);
+            border: 2px solid rgba(255,214,102,0.4);
+            border-radius: 18px; padding: 16px 16px 14px; margin: 12px 0;
+            box-shadow: 0 6px 20px rgba(0,0,0,0.3), inset 0 0 24px rgba(255,214,102,0.06);
+            position: relative;
+        }
+        .rank-table-frame::before {
+            content: "🏆 RANKING"; display: block; text-align: center;
+            font-size: 12px; font-weight: 900; letter-spacing: 3px;
+            color: #ffd966; text-shadow: 0 0 10px rgba(255,214,102,0.65);
+            margin-bottom: 10px;
         }
         .rank-table { width: 100%; border-collapse: collapse; }
+        .rank-table tr { border-bottom: 1px solid rgba(255,255,255,0.1); }
+        .rank-table tr:last-child { border-bottom: none; }
         .rank-table td {
-            padding: 5px 6px; font-weight: bold; font-size: 14px;
-            color: #4a3418; text-shadow: 0 1px 0 rgba(255,255,255,0.4);
+            padding: 8px 4px; font-weight: bold; font-size: 14px;
+            color: #f3eefc;
         }
-        .rank-table td:first-child { width: 36px; font-size: 17px; text-align: center; }
-        .rank-table td:last-child { text-align: right; color: #7a3b10; }
+        .rank-table td:first-child { width: 34px; font-size: 19px; text-align: center; }
+        .rank-table td:last-child {
+            text-align: right; font-size: 16px; font-weight: 900;
+            background: linear-gradient(90deg, #ffe08a, #ff9f43);
+            -webkit-background-clip: text; background-clip: text; color: transparent;
+        }
+        .rank-table tr:first-child td { font-size: 15px; }
+        .rank-table tr:first-child td:first-child { font-size: 25px; }
+        .rank-table tr:first-child td:last-child { font-size: 20px; }
 
         .online-rank-btn {
             width: 100%; margin-top: 10px; padding: 10px; border: none; border-radius: 30px;
