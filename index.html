@@ -277,6 +277,7 @@
         <h2 style="margin:0;">結果発表なのだ！</h2>
         <div style="font-size:40px; font-weight:bold; color:var(--gold); margin:5px 0;"><span id="final-score">0</span>点</div>
         <div id="item-bonus-row" style="font-size:13px; color:#8a4fb0; font-weight:bold; margin-bottom:5px; display:none;">💎 アイテムボーナス +<span id="item-bonus-val">0</span>点</div>
+        <div style="font-size:12px; color:var(--sub-ink); font-weight:bold; margin-bottom:8px;">正解数 <span id="final-correct">0</span>問 / 正解率 <span id="final-accuracy">0</span>%</div>
 
         <a href="https://line.me/S/sticker/32533905" target="_blank" id="promo-box">
             <p class="promo-title">＼ もっとずんだもんしゃべるのだ！ ／</p>
@@ -297,6 +298,7 @@
         <h2 style="margin:0; color:var(--accent-dark); font-size:24px;">🎉100問完全制覇なのだ！🎉</h2>
         <div style="font-size:32px; font-weight:bold; color:var(--gold); margin:5px 0;"><span id="clear-score">0</span>点</div>
         <div id="clear-item-bonus-row" style="font-size:13px; color:#8a4fb0; font-weight:bold; margin-bottom:5px; display:none;">💎 アイテムボーナス +<span id="clear-item-bonus-val">0</span>点</div>
+        <div style="font-size:12px; color:var(--sub-ink); font-weight:bold; margin-bottom:8px;">正解数 <span id="clear-correct">0</span>問 / 正解率 <span id="clear-accuracy">0</span>%</div>
         <a href="#" style="display:block; margin:10px 0; border-radius:16px; overflow:hidden; width:90%; box-shadow:0 6px 14px rgba(0,0,0,0.1);">
             <p style="background:#ffda44; margin:0; padding:5px; font-weight:bold; color:#333; font-size:12px;">▼ 次の冒険を選ぶのだ！ ▼</p>
             <img src="images/next_stage_banner.png" style="width:100%; display:block;" alt="次ステージ">
@@ -400,7 +402,7 @@
         {q:"★イベント★1年は何ヶ月？",c:["10ヶ月","12ヶ月","13ヶ月"],a:1},
         {q:"★イベント★カエルの子供を何と呼ぶ？",c:["オタマジャクシ","ヤゴ","ボウフラ"],a:0}
     ];
-    let pendingEventQuiz = false, itemCount = 0, currentEventPool = [];
+    let pendingEventQuiz = false, inEventQuiz = false, itemCount = 0, currentEventPool = [];
 
     // ===== 敵モンスターデザイン(5種類) =====
     // 後から画像(Geminiなどで生成したイラスト)に差し替えたい場合は、
@@ -434,7 +436,7 @@
         }
     }
 
-    let hp = 100, eHp = 100, score = 0, mochi = 3, streak = 0, defCount = 0, totalCorrect = 0, maxStreakThisTurn = 0;
+    let hp = 100, eHp = 100, score = 0, mochi = 3, streak = 0, defCount = 0, totalCorrect = 0, totalWrong = 0, maxStreakThisTurn = 0;
     let timerId = null, currentPool = JSON.parse(JSON.stringify(masterQuizData));
 
     function startGame() {
@@ -473,6 +475,7 @@
         if(hp <= 0) return;
         if(totalCorrect >= 100) { showAllClearScreen(); return; }
 
+        inEventQuiz = false;
         if (pendingEventQuiz) { pendingEventQuiz = false; loadEventQuiz(); return; }
 
         let type = (defCount >= 10) ? "boss" : (defCount >= 4) ? "mid" : "weak";
@@ -525,7 +528,7 @@
                 } else {
                     btn.classList.add('wrong-flash');
                     checkComboBonus();
-                    streak = 0; maxStreakThisTurn = 0; hp -= 20;
+                    streak = 0; maxStreakThisTurn = 0; hp -= 20; totalWrong++;
                     sounds.ng.play().catch(e=>{});
                     popZunda("images/gemini_damage_weak_comic.png");
                     document.getElementById('game-container').classList.add('shake-screen');
@@ -539,6 +542,7 @@
     }
 
     function loadEventQuiz() {
+        inEventQuiz = true;
         if (currentEventPool.length === 0) currentEventPool = [...eventQuizData];
         let idx = Math.floor(Math.random() * currentEventPool.length);
         let q = currentEventPool.splice(idx, 1)[0];
@@ -598,7 +602,7 @@
         timerId = setInterval(() => {
             time -= 1.0; document.getElementById('timer-bar').style.width = time + "%";
             if (Math.floor(time) < lastTick) { try{ sounds.tick.currentTime=0; sounds.tick.play(); }catch(e){} lastTick = Math.floor(time); }
-            if(time <= 0) { clearInterval(timerId); checkComboBonus(); streak = 0; maxStreakThisTurn = 0; hp -= 20; updateUI(); checkBattle(); }
+            if(time <= 0) { clearInterval(timerId); checkComboBonus(); streak = 0; maxStreakThisTurn = 0; hp -= 20; if (!inEventQuiz) totalWrong++; updateUI(); checkBattle(); }
         }, 100);
     }
 
@@ -674,6 +678,11 @@
         return bonus;
     }
 
+    function getAccuracy() {
+        let total = totalCorrect + totalWrong;
+        return total > 0 ? Math.round((totalCorrect / total) * 100) : 100;
+    }
+
     // ▼▼▼ 音声修正ポイント ▼▼▼
     function endGame() {
         clearInterval(timerId); sounds.bgm.pause();
@@ -686,6 +695,8 @@
             document.getElementById('item-bonus-row').style.display = 'block';
         }
         document.getElementById('final-score').innerText = score;
+        document.getElementById('final-correct').innerText = totalCorrect;
+        document.getElementById('final-accuracy').innerText = getAccuracy();
         saveRanking('rank-body');
         document.getElementById('result-screen').style.display = 'flex';
     }
@@ -702,6 +713,8 @@
             document.getElementById('clear-item-bonus-row').style.display = 'block';
         }
         document.getElementById('clear-score').innerText = score;
+        document.getElementById('clear-correct').innerText = totalCorrect;
+        document.getElementById('clear-accuracy').innerText = getAccuracy();
         saveRanking('clear-rank-body');
         document.getElementById('all-clear-screen').style.display = 'flex';
     }
