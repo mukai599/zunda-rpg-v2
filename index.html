@@ -277,7 +277,7 @@
         <h2 style="margin:0;">結果発表なのだ！</h2>
         <div style="font-size:40px; font-weight:bold; color:var(--gold); margin:5px 0;"><span id="final-score">0</span>点</div>
         <div id="item-bonus-row" style="font-size:13px; color:#8a4fb0; font-weight:bold; margin-bottom:5px; display:none;">💎 アイテムボーナス +<span id="item-bonus-val">0</span>点</div>
-        <div style="font-size:12px; color:var(--sub-ink); font-weight:bold; margin-bottom:8px;">正解数 <span id="final-correct">0</span>問 / 正解率 <span id="final-accuracy">0</span>%</div>
+        <div style="font-size:12px; color:var(--sub-ink); font-weight:bold; margin-bottom:8px;">正解数 <span id="final-correct">0</span>問 / 正解率 <span id="final-accuracy">0</span>% / 撃破数 <span id="final-defeated">0</span>体</div>
 
         <a href="https://line.me/S/sticker/32533905" target="_blank" id="promo-box">
             <p class="promo-title">＼ もっとずんだもんしゃべるのだ！ ／</p>
@@ -298,7 +298,7 @@
         <h2 style="margin:0; color:var(--accent-dark); font-size:24px;">🎉100問完全制覇なのだ！🎉</h2>
         <div style="font-size:32px; font-weight:bold; color:var(--gold); margin:5px 0;"><span id="clear-score">0</span>点</div>
         <div id="clear-item-bonus-row" style="font-size:13px; color:#8a4fb0; font-weight:bold; margin-bottom:5px; display:none;">💎 アイテムボーナス +<span id="clear-item-bonus-val">0</span>点</div>
-        <div style="font-size:12px; color:var(--sub-ink); font-weight:bold; margin-bottom:8px;">正解数 <span id="clear-correct">0</span>問 / 正解率 <span id="clear-accuracy">0</span>%</div>
+        <div style="font-size:12px; color:var(--sub-ink); font-weight:bold; margin-bottom:8px;">正解数 <span id="clear-correct">0</span>問 / 正解率 <span id="clear-accuracy">0</span>% / 撃破数 <span id="clear-defeated">0</span>体</div>
         <a href="#" style="display:block; margin:10px 0; border-radius:16px; overflow:hidden; width:90%; box-shadow:0 6px 14px rgba(0,0,0,0.1);">
             <p style="background:#ffda44; margin:0; padding:5px; font-weight:bold; color:#333; font-size:12px;">▼ 次の冒険を選ぶのだ！ ▼</p>
             <img src="images/next_stage_banner.png" style="width:100%; display:block;" alt="次ステージ">
@@ -697,6 +697,7 @@
         document.getElementById('final-score').innerText = score;
         document.getElementById('final-correct').innerText = totalCorrect;
         document.getElementById('final-accuracy').innerText = getAccuracy();
+        document.getElementById('final-defeated').innerText = defCount;
         saveRanking('rank-body');
         document.getElementById('result-screen').style.display = 'flex';
     }
@@ -715,6 +716,7 @@
         document.getElementById('clear-score').innerText = score;
         document.getElementById('clear-correct').innerText = totalCorrect;
         document.getElementById('clear-accuracy').innerText = getAccuracy();
+        document.getElementById('clear-defeated').innerText = defCount;
         saveRanking('clear-rank-body');
         document.getElementById('all-clear-screen').style.display = 'flex';
     }
