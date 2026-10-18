@@ -103,11 +103,18 @@
         #btn-mochi { cursor:pointer; color:var(--ink); transition: transform 0.15s; }
         #btn-mochi:active { transform: scale(0.94); }
         .score-chip { color:var(--accent-dark); background:#eafaf1; }
+        .item-chip { color:#8a4fb0; background:#f4ebfa; }
 
-        #timer-bg { flex:1; height:10px; background:#eef1ef; border-radius:6px; overflow:hidden; margin:0 10px; }
+        #timer-bg { flex:1; height:10px; background:#eef1ef; border-radius:6px; overflow:hidden; margin:0 8px; min-width: 30px; }
         #timer-bar { height:100%; width:100%; background: linear-gradient(90deg, var(--gold), var(--danger)); transition: width 0.1s linear; }
 
         #correct-row { text-align:right; font-size:11px; color:var(--sub-ink); font-weight:bold; margin-bottom:6px; }
+
+        #event-banner {
+            text-align:center; font-size:12px; font-weight:bold; color:#8a4fb0;
+            background: linear-gradient(90deg, #f4ebfa, #fde9c8, #f4ebfa);
+            border-radius: 20px; padding: 5px 10px; margin-bottom: 8px;
+        }
 
         #question-box {
             background: #fff; color: var(--ink); border-radius: 18px; padding: 20px 16px;
@@ -116,6 +123,11 @@
             margin-bottom: 16px; line-height: 1.5;
             box-shadow: 0 2px 10px rgba(0,0,0,0.06);
             border: 1px solid #eef1ef;
+            transition: border-color 0.3s, box-shadow 0.3s;
+        }
+        #question-box.event-question {
+            border: 2px solid #d9a528;
+            box-shadow: 0 2px 14px rgba(217,165,40,0.3);
         }
 
         .choice-grid { display: grid; grid-template-columns: 1fr 1fr; grid-auto-rows: min-content; gap: 10px; }
@@ -218,6 +230,7 @@
     <div id="result-screen" class="full-overlay" style="display:none;">
         <h2 style="margin:0;">結果発表なのだ！</h2>
         <div style="font-size:40px; font-weight:bold; color:var(--gold); margin:5px 0;"><span id="final-score">0</span>点</div>
+        <div id="item-bonus-row" style="font-size:13px; color:#8a4fb0; font-weight:bold; margin-bottom:5px; display:none;">💎 アイテムボーナス +<span id="item-bonus-val">0</span>点</div>
 
         <a href="https://line.me/S/sticker/32533905" target="_blank" id="promo-box">
             <p class="promo-title">＼ もっとずんだもんしゃべるのだ！ ／</p>
@@ -236,6 +249,7 @@
     <div id="all-clear-screen" class="full-overlay" style="display:none;">
         <h2 style="margin:0; color:var(--accent-dark); font-size:24px;">🎉100問完全制覇なのだ！🎉</h2>
         <div style="font-size:32px; font-weight:bold; color:var(--gold); margin:5px 0;"><span id="clear-score">0</span>点</div>
+        <div id="clear-item-bonus-row" style="font-size:13px; color:#8a4fb0; font-weight:bold; margin-bottom:5px; display:none;">💎 アイテムボーナス +<span id="clear-item-bonus-val">0</span>点</div>
         <a href="#" style="display:block; margin:10px 0; border-radius:16px; overflow:hidden; width:90%; box-shadow:0 6px 14px rgba(0,0,0,0.1);">
             <p style="background:#ffda44; margin:0; padding:5px; font-weight:bold; color:#333; font-size:12px;">▼ 次の冒険を選ぶのだ！ ▼</p>
             <img src="images/next_stage_banner.png" style="width:100%; display:block;" alt="次ステージ">
@@ -276,10 +290,12 @@
     <div id="bottom-ui-area">
         <div class="top-row">
             <div id="btn-mochi" class="chip">🍡 x<span id="mochi-val">3</span></div>
+            <div class="chip item-chip">💎 x<span id="item-val">0</span></div>
             <div id="timer-bg"><div id="timer-bar"></div></div>
             <div class="chip score-chip">★ <span id="score-val">0</span></div>
         </div>
         <div id="correct-row">正解数: <span id="correct-count">0</span>/100</div>
+        <div id="event-banner" style="display:none;">⭐ イベントクイズ！正解でアイテムGET ⭐</div>
         <div id="question-box"></div>
         <div id="choices" class="choice-grid"></div>
     </div>
@@ -314,6 +330,19 @@
         mid: [{q:"ダイヤの正体は何と同じ成分？",c:["鉄","炭素","石灰"],a:1},{q:"宇宙で泣くと涙はどうなる？",c:["落ちる","蒸発する","目に留まる"],a:2},{q:"1円玉の直径は何cm？",c:["1cm","2cm","3cm"],a:1},{q:"火星が赤い理由は？",c:["火がある","錆びた鉄がある","暑いから"],a:1},{q:"地球の自転、1時間は何度？",c:["10度","15度","24度"],a:1},{q:"面積が世界一の国は？",c:["カナダ","アメリカ","ロシア"],a:2},{q:"マチュピチュがある国は？",c:["ペルー","チリ","メキシコ"],a:0},{q:"体で一番硬い部分はどこ？",c:["頭の骨","歯のエナメル質","大腿骨"],a:1},{q:"雲の成分は何？",c:["煙","水や氷の粒","空気"],a:1},{q:"フランスの首都は？",c:["ベルリン","ロンドン","パリ"],a:2},{q:"光が月に届く時間は？",c:["約1.3秒","約8分","約1時間"],a:0},{q:"赤ちゃんの骨の数は大人より？",c:["多い","少ない","同じ"],a:0},{q:"世界一長い川は？",c:["アマゾン川","ナイル川","長江"],a:1},{q:"金は錆びる？",c:["錆びる","錆びない","条件次第"],a:1},{q:"五輪旗の左端の色は？",c:["青色","黄色","赤色"],a:0},{q:"日本一広い湖は？",c:["霞ヶ浦","琵琶湖","サロマ湖"],a:1},{q:"太陽表面の温度は約何度？",c:["1000度","6000度","100万度"],a:1},{q:"ピアノの鍵盤の数は？",c:["80個","88個","92個"],a:1},{q:"虹の一番上の色は？",c:["紫色","赤色","黄色"],a:1},{q:"雷の音速は1秒間に約何m？",c:["340m","30万km","1km"],a:0},{q:"日本最南端の島は？",c:["沖ノ鳥島","与那国島","竹富島"],a:0},{q:"エッフェル塔がある街は？",c:["ローマ","パリ","マドリード"],a:1},{q:"トランプ合計(J抜き)は？",c:["364","365","366"],a:1},{q:"心臓は1日に約何回打つ？",c:["1万回","5万回","10万回"],a:2},{q:"1円玉は純アルミニウム？",c:["そうです","違います","混合です"],a:0},{q:"空気に一番多い気体は？",c:["酸素","二酸化炭素","窒素"],a:2},{q:"ハチミツは腐る？",c:["腐らない","腐る","半年で腐る"],a:0},{q:"南極と北極どっちが寒い？",c:["南極","北極","同じくらい"],a:0},{q:"自由の女神が持つのは？",c:["聖書","独立宣言書","憲法"],a:1},{q:"アインシュタインの賞は？",c:["物理学賞","化学賞","平和賞"],a:0},{q:"最多の血液型は世界で？",c:["A型","B型","O型"],a:2},{q:"パンの語源は何語？",c:["英語","フランス語","ポルトガル語"],a:2},{q:"5円玉に穴がある理由は？",c:["材料節約","紐を通す","偽造防止"],a:0},{q:"1マイルは約何キロ？",c:["1km","1.6km","2km"],a:1},{q:"名探偵コナンの主人公、江戸川コナンの本当の名前は？",c:["服部平次","工藤新一","毛利小五郎"],a:1},{q:"「鬼滅の刃」の主人公の名前は？",c:["竈門炭治郎","我妻善逸","嘴平伊之助"],a:0},{q:"サザエさんの夫の名前は？",c:["マスオ","ノリスケ","タラオ"],a:0},{q:"ちびまる子ちゃんの舞台は静岡県のどこ？",c:["清水","浜松","熱海"],a:0},{q:"日本で消費税が初めて導入されたのはいつ？",c:["昭和50年","平成元年","平成20年"],a:1},{q:"物の値段は主に何のバランスで決まる？",c:["需要と供給","国の命令だけ","お店の気分だけ"],a:0},{q:"「NARUTO」の主人公、うずまきナルトの好物は？",c:["ラーメン","焼肉","おでん"],a:0},{q:"アニメ映画「千と千尋の神隠し」の監督は？",c:["宮崎駿","高畑勲","新海誠"],a:0}],
         boss: [{q:"光は1秒で地球を何周する？",c:["約3周","約7.5周","約10周"],a:1},{q:"将棋で裏返っても名不変なのは？",c:["飛車","角行","王将"],a:2},{q:"原子番号1番の元素は？",c:["ヘリウム","水素","リチウム"],a:1},{q:"マリアナ海溝の深さは？",c:["約5000m","約8000m","1万m以上"],a:2},{q:"引力を発見したきっかけの果物？",c:["桃","オレンジ","リンゴ"],a:2},{q:"日本の初代総理大臣は？",c:["伊藤博文","福沢諭吉","織田信長"],a:0},{q:"モナリザの作者は誰？",c:["ピカソ","ダヴィンチ","ゴッホ"],a:1},{q:"1兆の1000倍を何と呼ぶ？",c:["垓","京","穣"],a:1},{q:"太陽系最大の惑星は？",c:["土星","天王星","木星"],a:2},{q:"ピラミッドが作られた目的は？",c:["天文台","王の墓","穀物庫"],a:1},{q:"第九の作曲家は誰？",c:["ベートーヴェン","モーツァルト","バッハ"],a:0},{q:"月の満ち欠けの周期は何日？",c:["28日","29.5日","31日"],a:1},{q:"昭和基地がある場所は？",c:["南極","北極","月面"],a:0},{q:"ハワイはアメリカ何番目の州？",c:["48番目","49番目","50番目"],a:2},{q:"オーロラが発生する層は？",c:["対流圏","成層圏","熱圏"],a:2},{q:"人とDNAが98%同じなのは？",c:["サル","ブタ","チンパンジー"],a:2},{q:"宇宙創生の爆発名は？",c:["ビッグバン","ノヴァ","ブラックホール"],a:0},{q:"最小面積の国はどこ？",c:["モナコ","バチカン","ナウル"],a:1},{q:"ノーベルが発明したのは？",c:["電球","電話","ダイナマイト"],a:2},{q:"土俵の直径は何メートル？",c:["4.24m","4.55m","5m"],a:1},{q:"世界一高いビルがあるのは？",c:["ドバイ","上海","ニューヨーク"],a:0},{q:"光が1年間に進む距離を何という？",c:["1光年","1マイル","1パーセク"],a:0},{q:"イタリアのユーロ前の通貨は？",c:["フラン","リラ","マルク"],a:1},{q:"アポロ11号が月面着陸した年は？",c:["1964年","1969年","1972年"],a:1},{q:"将棋盤のマス目は全部でいくつ？",c:["64マス","81マス","100マス"],a:1},{q:"東京タワーの高さは何m？",c:["300m","333m","634m"],a:1},{q:"世界一長い小説とされるのは？",c:["戦争と平和","失われた時を求めて","源氏物語"],a:1},{q:"野球一辺のダイヤモンドの長さ？",c:["25m","27.4m","30m"],a:1},{q:"一円玉の重さは何グラム？",c:["1g","2g","5g"],a:0},{q:"日本の鉄道初走行区間はどこ？",c:["新橋から横浜","上野から浅草","東京から大阪"],a:0},{q:"富士山の高さは何メートル？",c:["3333m","3776m","4000m"],a:1},{q:"星座の数は全部でいくつ？",c:["12星座","48星座","88星座"],a:2},{q:"「機動戦士ガンダム」で、ガンダムに乗る主人公の名前は？",c:["シャア・アズナブル","アムロ・レイ","ブライト・ノア"],a:1},{q:"ドラえもんが生まれた年は？",c:["2012年","2112年","3012年"],a:1},{q:"1ドル＝100円から1ドル＝150円になることを何という？",c:["円高","円安","円切り上げ"],a:1},{q:"「新世紀エヴァンゲリオン」で、碇シンジが最初に乗る機体は？",c:["初号機","零号機","弐号機"],a:0}]
     };
+
+    // ===== イベントクイズ(敵を10体倒すごとに出現、正解でアイテム獲得) =====
+    const eventQuizData = [
+        {q:"★イベント★ずんだもんの好物は何？",c:["ずんだ餅","たい焼き","プリン"],a:0},
+        {q:"★イベント★このゲームの敵は全部で何種類？",c:["3種類","5種類","7種類"],a:1},
+        {q:"★イベント★1時間は何分？",c:["60分","100分","24分"],a:0},
+        {q:"★イベント★1週間は何日？",c:["5日","7日","10日"],a:1},
+        {q:"★イベント★虹は一般的に何色？",c:["5色","7色","9色"],a:1},
+        {q:"★イベント★人間の体温の平均は？",c:["約30度","約36度","約40度"],a:1},
+        {q:"★イベント★1年は何ヶ月？",c:["10ヶ月","12ヶ月","13ヶ月"],a:1},
+        {q:"★イベント★カエルの子供を何と呼ぶ？",c:["オタマジャクシ","ヤゴ","ボウフラ"],a:0}
+    ];
+    let pendingEventQuiz = false, itemCount = 0, currentEventPool = [];
 
     // ===== 敵モンスターデザイン(5種類) =====
     // 後から画像(Geminiなどで生成したイラスト)に差し替えたい場合は、
@@ -384,6 +413,8 @@
         if(hp <= 0) return;
         if(totalCorrect >= 100) { showAllClearScreen(); return; }
 
+        if (pendingEventQuiz) { pendingEventQuiz = false; loadEventQuiz(); return; }
+
         let type = (defCount >= 10) ? "boss" : (defCount >= 4) ? "mid" : "weak";
         let pool = currentPool[type];
         if (pool.length === 0) {
@@ -447,6 +478,49 @@
         startTimer();
     }
 
+    function loadEventQuiz() {
+        if (currentEventPool.length === 0) currentEventPool = [...eventQuizData];
+        let idx = Math.floor(Math.random() * currentEventPool.length);
+        let q = currentEventPool.splice(idx, 1)[0];
+
+        document.getElementById('event-banner').style.display = 'block';
+        document.getElementById('question-box').classList.add('event-question');
+        popZunda("images/gemini_zunda_think.png");
+        document.getElementById('question-box').innerText = q.q;
+        const container = document.getElementById('choices');
+        container.innerHTML = "";
+        q.c.forEach((choice, i) => {
+            const btn = document.createElement('button');
+            btn.className = "choice-btn"; btn.innerText = choice;
+            btn.onclick = () => {
+                clearInterval(timerId);
+                document.querySelectorAll('.choice-btn').forEach(b => b.disabled = true);
+                document.getElementById('event-banner').style.display = 'none';
+                document.getElementById('question-box').classList.remove('event-question');
+                if (i === q.a) {
+                    btn.classList.add('correct-flash');
+                    itemCount++;
+                    sounds.ok.play().catch(e=>{});
+                    updateUI();
+                    showItemGet();
+                } else {
+                    btn.classList.add('wrong-flash');
+                    sounds.ng.play().catch(e=>{});
+                }
+                setTimeout(loadQuiz, 1300);
+            };
+            container.appendChild(btn);
+        });
+        startTimer();
+    }
+
+    function showItemGet() {
+        const b = document.getElementById('bonus-pop-up');
+        b.innerText = "アイテム入手！💎\nゲームオーバー時のアイテム\nボーナスに加算されます";
+        b.style.display = "block";
+        setTimeout(() => { b.style.display = "none"; }, 1500);
+    }
+
     function checkComboBonus() {
         if(maxStreakThisTurn >= 4) {
             let bonus = maxStreakThisTurn * 500;
@@ -488,6 +562,7 @@
         }
         document.getElementById('score-val').innerText = score;
         document.getElementById('mochi-val').innerText = mochi;
+        document.getElementById('item-val').innerText = itemCount;
         document.getElementById('correct-count').innerText = totalCorrect;
         updateEnemyLean();
 
@@ -507,6 +582,7 @@
             checkComboBonus();
             let hb = hp * 10, mb = mochi * 200, tb = 500 + hb + mb;
             score += tb; defCount++;
+            if (defCount % 10 === 0) pendingEventQuiz = true;
             const visual = document.getElementById('enemy-visual');
             visual.classList.remove('enemy-idle');
             visual.classList.add('enemy-defeat-anim');
@@ -532,12 +608,23 @@
         setTimeout(() => p.style.opacity = "0", 800);
     }
 
+    function applyItemBonus() {
+        let bonus = itemCount * 1000;
+        score += bonus;
+        return bonus;
+    }
+
     // ▼▼▼ 音声修正ポイント ▼▼▼
     function endGame() {
         clearInterval(timerId); sounds.bgm.pause();
         sounds.result.currentTime = 0; sounds.result.play().catch(e=>{});
         // 結果発表時にボイスを再生
         setTimeout(() => { sounds.vPromo.currentTime = 0; sounds.vPromo.play().catch(e=>{}); }, 500);
+        let bonus = applyItemBonus();
+        if (bonus > 0) {
+            document.getElementById('item-bonus-val').innerText = bonus;
+            document.getElementById('item-bonus-row').style.display = 'block';
+        }
         document.getElementById('final-score').innerText = score;
         saveRanking('rank-body');
         document.getElementById('result-screen').style.display = 'flex';
@@ -549,6 +636,11 @@
         sounds.result.currentTime = 0; sounds.result.play().catch(e=>{});
         // オールクリア時に一番盛り上がるボイスを再生
         setTimeout(() => { sounds.vCombo4.currentTime = 0; sounds.vCombo4.play().catch(e=>{}); }, 500);
+        let bonus = applyItemBonus();
+        if (bonus > 0) {
+            document.getElementById('clear-item-bonus-val').innerText = bonus;
+            document.getElementById('clear-item-bonus-row').style.display = 'block';
+        }
         document.getElementById('clear-score').innerText = score;
         saveRanking('clear-rank-body');
         document.getElementById('all-clear-screen').style.display = 'flex';
